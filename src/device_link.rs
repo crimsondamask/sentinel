@@ -1,25 +1,41 @@
 use crate::LinkStatus;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
 
 use tokio_modbus::prelude::*;
-use tokio_serial::Parity;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ParityType {
+    Even,
+    Odd,
+    None,
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ModbusTcpConfig {
     pub ip: String,
     pub port: usize,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl ModbusTcpConfig {
+    pub fn new(ip: String, port: usize) -> Self {
+        Self { ip, port }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ModbusSerialConfig {
     pub com_port: String,
     pub baudrate: u32,
-    pub parity: Parity,
+    pub parity: ParityType,
     pub timeout: Duration,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl ModbusSerialConfig {
+    // TODO!
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct S7Config {
     pub ip: String,
     pub rack: usize,
@@ -27,13 +43,13 @@ pub struct S7Config {
 }
 
 // TODO
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EipConfig {}
 // TODO
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OpcUaConfig {}
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Protocol {
     ModbusTcp(ModbusTcpConfig),
     ModbusSerial(ModbusSerialConfig),
@@ -42,7 +58,7 @@ pub enum Protocol {
     OpcUa(OpcUaConfig),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ModbusRegister {
     Holding(u16),
     Input(u16),
@@ -51,14 +67,14 @@ pub enum ModbusRegister {
 }
 
 // TODO
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct S7Addr {
     db: usize,
     offset: usize,
     start_bit: usize,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TagAddress {
     ModbusAddr(ModbusRegister),
     S7Addr(S7Addr),
@@ -66,7 +82,7 @@ pub enum TagAddress {
     OpcUaAddr,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TagValue {
     Int(u16),
     Dint(u32),
@@ -74,26 +90,34 @@ pub enum TagValue {
     Bit(bool),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum TagStatus {
+    Normal,
+    Error(String),
+    Warn,
+    Alarm,
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tag {
-    id: usize,
-    tk: String,
+    pub id: usize,
+    pub tk: String,
     pub name: String,
+    pub enabled: bool,
     pub address: TagAddress,
     pub value: TagValue,
-    pub is_error: bool,
-    pub error_message: String,
+    pub status: TagStatus,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DeviceLink {
-    id: usize,
-    tk: String,
+    pub id: usize,
+    pub tk: String,
     pub name: String,
+    pub enabled: bool,
     pub protocol: Protocol,
     pub status: LinkStatus,
     pub error_message: String,
     pub tags: Vec<Tag>,
-    tag_count: usize,
+    pub tag_count: usize,
 }
 
 pub enum DeviceLinkContext {
@@ -109,9 +133,9 @@ impl Tag {
             tk,
             name,
             address,
+            enabled: false,
             value: TagValue::Real(0.0),
-            is_error: false,
-            error_message: String::from("Initiated."),
+            status: TagStatus::Error(String::from("Initiated.")),
         }
     }
     pub async fn read(&mut self, ctx: &mut DeviceLinkContext) -> Result<()> {
@@ -201,7 +225,7 @@ impl DeviceLink {
             let tag = Tag::new(
                 format!("TAG{i}"),
                 format!("LK{}:{:03}", id, i),
-                id,
+                i,
                 address.clone(),
             );
 
@@ -211,6 +235,7 @@ impl DeviceLink {
             id,
             tk,
             name,
+            enabled: false,
             protocol,
             status: LinkStatus::Disconnected,
             error_message: String::from("Disconnected."),

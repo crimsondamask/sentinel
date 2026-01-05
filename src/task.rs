@@ -1,7 +1,8 @@
+use crate::device_link::Tag;
 use anyhow::Result;
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::StateDb;
+use crate::{GlobalState, StateDb};
 
 pub enum TaskType {
     DeviceLink,
@@ -10,31 +11,25 @@ pub enum TaskType {
 }
 
 pub enum TaskMessage {
-    LinkPollResult,
+    //LinkPollResult,
     LinkConfig,
-    LinkWrite,
+    DeviceWrite(Tag),
 }
 
 pub struct Task {
     pub task_type: TaskType,
-    pub state: StateDb,
-    pub sender: Sender<TaskMessage>,
-    pub receiver: Receiver<TaskMessage>,
+    pub state: GlobalState,
 }
 
 impl Task {
     pub fn new(
         &mut self,
         task_type: TaskType,
-        state: StateDb,
-        sender: Sender<TaskMessage>,
-        receiver: Receiver<TaskMessage>,
+        state: GlobalState,
     ) -> Self {
         Self {
             task_type,
             state,
-            sender,
-            receiver,
         }
     }
 }
