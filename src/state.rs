@@ -13,6 +13,6 @@ impl GlobalState {
     pub fn new(links: Vec<Link>) -> Self {
         Self {
             state_db: Arc::new(Mutex::new(links)),
-        }    
+        }
     }
 }
