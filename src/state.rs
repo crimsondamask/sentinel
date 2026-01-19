@@ -4,6 +4,8 @@ use tokio::sync::Mutex;
 
 pub type StateDb = Arc<Mutex<Vec<Link>>>;
 
+// Global state. Must be clone-able because it will be shared
+// with multiple tasks.
 #[derive(Clone, Debug)]
 pub struct GlobalState {
     pub state_db: StateDb,

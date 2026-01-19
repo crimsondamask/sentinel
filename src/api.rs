@@ -9,6 +9,7 @@ use serde::Deserialize;
 pub struct LinkIdQuery {
     pub link_id: u32,
 }
+
 #[derive(Deserialize)]
 pub struct TagIdQuery {
     pub link_id: u32,

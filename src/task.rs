@@ -1,8 +1,10 @@
+use log::info;
+use std::time::Duration;
+
 use crate::device_link::Tag;
 use anyhow::Result;
-use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::{GlobalState, StateDb};
+use crate::GlobalState;
 
 pub enum TaskType {
     DeviceLink,
@@ -17,17 +19,15 @@ pub enum TaskMessage {
 }
 
 pub struct Task {
+    pub id: usize,
     pub task_type: TaskType,
     pub state: GlobalState,
 }
 
 impl Task {
-    pub fn new(
-        &mut self,
-        task_type: TaskType,
-        state: GlobalState,
-    ) -> Self {
+    pub fn new(task_type: TaskType, state: GlobalState, id: usize) -> Self {
         Self {
+            id,
             task_type,
             state,
         }
@@ -36,7 +36,8 @@ impl Task {
 
 pub async fn handle_link_task(task: Task) {
     loop {
-        unimplemented!()
+        tokio::time::sleep(Duration::from_millis(1000)).await;
+        info!("Poll from task: {}", task.id);
     }
 }
 pub async fn handle_logging_task(task: Task) {
