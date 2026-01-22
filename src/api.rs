@@ -1,8 +1,9 @@
-use crate::link::Link;
 use crate::state::GlobalState;
+use crate::{DeviceLink, link::Link};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
 use serde::Deserialize;
+use tokio_modbus::prelude::DeviceIdObject;
 
 // Used as a link ID for the lookup.
 #[derive(Deserialize)]
@@ -62,6 +63,32 @@ pub async fn get_tag_config(
             }
             _ => {
                 // TODO check for other types of tags.
+                continue;
+            }
+        }
+    }
+    Err(StatusCode::NOT_FOUND)
+}
+
+// Reconfig the Device Link.
+// This is a post request.
+pub async fn reconfig_device_link(
+    State(state): State<GlobalState>,
+    Json(link_id): Json<LinkIdQuery>,
+    Json(config): Json<DeviceLink>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    for (i, link) in locked_state.iter_mut().enumerate() {
+        match link {
+            Link::Device(link) => {
+                if link.id as u32 == link_id.link_id {
+                    info!("Reconfigured device.");
+                    locked_state[i] = Link::Device(config);
+                    return Ok(StatusCode::OK);
+                }
+            }
+            _ => {
                 continue;
             }
         }
