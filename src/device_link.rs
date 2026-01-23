@@ -271,7 +271,12 @@ impl DeviceLink {
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) -> Result<()> {
         for tag in self.tags.iter_mut() {
             if tag.enabled {
-                tag.read(ctx).await?;
+                match tag.read(ctx).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        tag.status = TagStatus::Error(format!("{}", e));
+                    }
+                }
             } else {
                 anyhow::bail!("The Tag is not enabled.")
             }
