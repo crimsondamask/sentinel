@@ -1,5 +1,5 @@
 use crate::LinkStatus;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
 
@@ -233,7 +233,7 @@ impl DeviceLink {
         }
         Self {
             id,
-            tk,
+            tk: format!("{}{}", tk, id),
             name,
             enabled: false,
             protocol,
@@ -270,7 +270,11 @@ impl DeviceLink {
 
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) -> Result<()> {
         for tag in self.tags.iter_mut() {
-            tag.read(ctx).await?;
+            if tag.enabled {
+                tag.read(ctx).await?;
+            } else {
+                anyhow::bail!("The Tag is not enabled.")
+            }
         }
         Ok(())
     }

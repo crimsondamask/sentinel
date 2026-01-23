@@ -1,7 +1,7 @@
 use log::info;
 use std::time::Duration;
 
-use crate::device_link::Tag;
+use crate::{DeviceLink, Link, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
 
 use crate::GlobalState;
@@ -36,6 +36,50 @@ impl Task {
 
 pub async fn handle_link_task(task: Task) {
     loop {
+        let mut default_link: DeviceLink = DeviceLink::new(
+            "new_link".to_string(),
+            "PLC".to_string(),
+            0,
+            Protocol::ModbusTcp(ModbusTcpConfig::new("127.0.0.1".to_string(), 5502)),
+            1000,
+        );
+
+        // We make sure that we only lock the Mutex to update the default link
+        // and release the lock.
+        {
+            let locked_state = task.state.state_db.lock().await;
+            match &locked_state[task.id] {
+                Link::Device(config) => {
+                    default_link = config.clone();
+                }
+                _ => {}
+            }
+        }
+        match default_link.connect().await {
+            Ok(mut link_context) => {
+                info!(
+                    "Connection successful from task: {}. Device: {}",
+                    task.id, default_link.name
+                );
+                /*
+                Handle the connected link context
+                inside a loop
+                */
+                loop {
+                    if let Ok(_) = default_link.poll(&mut link_context).await {
+                        info!(
+                            "Poll successful from task: {}. Device: {}",
+                            task.id, default_link.name
+                        );
+                    } else {
+                        break;
+                    }
+                }
+            }
+            Err(e) => {
+                info!("Failed to connect: {e}. Task: {}", task.id);
+            }
+        }
         tokio::time::sleep(Duration::from_millis(1000)).await;
         info!("Poll from task: {}", task.id);
     }
