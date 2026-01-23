@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use log::info;
 use std::time::Duration;
 
@@ -66,14 +67,7 @@ pub async fn handle_link_task(task: Task) {
                 inside a loop
                 */
                 loop {
-                    if let Ok(_) = default_link.poll(&mut link_context).await {
-                        info!(
-                            "Poll successful from task: {}. Device: {}",
-                            task.id, default_link.name
-                        );
-                    } else {
-                        break;
-                    }
+                    default_link.poll(&mut link_context).await;
                 }
             }
             Err(e) => {

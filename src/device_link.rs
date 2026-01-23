@@ -1,5 +1,6 @@
 use crate::LinkStatus;
 use anyhow::{Result, anyhow};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
 
@@ -118,6 +119,7 @@ pub struct DeviceLink {
     pub error_message: String,
     pub tags: Vec<Tag>,
     pub tag_count: usize,
+    pub last_poll_time: NaiveDateTime,
 }
 
 pub enum DeviceLinkContext {
@@ -241,6 +243,7 @@ impl DeviceLink {
             error_message: String::from("Disconnected."),
             tags: tag_list,
             tag_count,
+            last_poll_time: NaiveDateTime::default(),
         }
     }
 
@@ -268,7 +271,7 @@ impl DeviceLink {
         }
     }
 
-    pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) -> Result<()> {
+    pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) {
         for tag in self.tags.iter_mut() {
             if tag.enabled {
                 match tag.read(ctx).await {
@@ -278,10 +281,10 @@ impl DeviceLink {
                     }
                 }
             } else {
-                anyhow::bail!("The Tag is not enabled.")
+                tag.status = TagStatus::Error(format!("The Tag is not initialized."));
             }
         }
-        Ok(())
+        self.last_poll_time = chrono::Local::now().naive_local();
     }
 
     pub async fn write_tags(
