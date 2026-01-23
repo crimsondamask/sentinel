@@ -13,5 +13,5 @@ pub enum Link {
 pub enum LinkStatus {
     Connected,
     Disconnected,
-    Error,
+    Error(String),
 }

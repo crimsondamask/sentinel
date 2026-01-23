@@ -68,6 +68,7 @@ pub async fn handle_link_task(task: Task) {
                 */
                 loop {
                     default_link.poll(&mut link_context).await;
+                    tokio::time::sleep(Duration::from_millis(1000)).await;
                 }
             }
             Err(e) => {

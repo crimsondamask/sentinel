@@ -278,6 +278,10 @@ impl DeviceLink {
                     Ok(_) => {}
                     Err(e) => {
                         tag.status = TagStatus::Error(format!("{}", e));
+                        self.status = LinkStatus::Error(format!(
+                            "Reading failed at Tag: {}. Error: {}",
+                            tag.id, e
+                        ));
                     }
                 }
             } else {
