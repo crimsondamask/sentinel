@@ -77,12 +77,13 @@ pub async fn reconfig_device_link(
 ) -> Result<impl IntoResponse, StatusCode> {
     let mut locked_state = state.state_db.lock().await;
 
-    for (i, link) in locked_state.iter_mut().enumerate() {
+    for (_, link) in locked_state.iter_mut().enumerate() {
         match link {
             Link::Device(link) => {
                 if link.id == config.id {
-                    info!("Reconfigured device.");
-                    locked_state[i] = Link::Device(config);
+                    info!("Reconfigured device: {}.", link.id);
+                    link.reconfigure(config);
+                    //locked_state[i] = Link::Device(config);
                     return Ok(StatusCode::OK);
                 }
             }

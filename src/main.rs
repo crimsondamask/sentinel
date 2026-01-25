@@ -17,6 +17,7 @@ async fn main() -> Result<()> {
         0,
         protocol.clone(),
         1000,
+        500,
     ));
 
     links.push(modbus_link);
@@ -27,6 +28,7 @@ async fn main() -> Result<()> {
         1,
         protocol,
         1000,
+        500,
     ));
     links.push(modbus_link);
 

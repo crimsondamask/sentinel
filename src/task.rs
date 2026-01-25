@@ -1,8 +1,8 @@
 use chrono::NaiveDateTime;
 use log::info;
-use std::time::Duration;
+use std::{default, time::Duration};
 
-use crate::{DeviceLink, Link, ModbusTcpConfig, Protocol, device_link::Tag};
+use crate::{DeviceLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
 
 use crate::GlobalState;
@@ -37,12 +37,14 @@ impl Task {
 
 pub async fn handle_link_task(task: Task) {
     loop {
+        // Temporary placeholder for the device link.
         let mut default_link: DeviceLink = DeviceLink::new(
             "new_link".to_string(),
             "PLC".to_string(),
             0,
             Protocol::ModbusTcp(ModbusTcpConfig::new("127.0.0.1".to_string(), 5502)),
             1000,
+            500,
         );
 
         // We make sure that we only lock the Mutex to update the default link
@@ -64,19 +66,57 @@ pub async fn handle_link_task(task: Task) {
                 );
                 /*
                 Handle the connected link context
-                inside a loop
+                inside a loop.
+                This traps the execution in an infinite loop until an error occurs.
                 */
                 loop {
+                    // Poll the device.
                     default_link.poll(&mut link_context).await;
-                    tokio::time::sleep(Duration::from_millis(1000)).await;
+
+                    // Lock the state and update the link with the polled values.
+                    {
+                        task.state.state_db.lock().await[task.id] =
+                            Link::Device(default_link.clone());
+                    }
+
+                    match default_link.status {
+                        LinkStatus::Normal => {
+                            info!(
+                                "Poll completed successfully: timestamp: {}",
+                                default_link
+                                    .last_poll_time
+                                    .and_utc()
+                                    .format("%Y-%m-%d %H:%M:%S%.3f")
+                            );
+                        }
+                        LinkStatus::Error(_) => {
+                            /*
+                            In case of an error, we try to reconnect by breaking out of
+                            the loop.
+                            */
+                            info!("Link is trying to reconnect.");
+                            break;
+                        }
+                        LinkStatus::NeedsToReconnect => {
+                            /*
+                            We might trigger a reconnect event from elsewhere.
+                            This is a workaround. Might change.
+                            */
+                            break;
+                        }
+                        _ => {}
+                    }
+
+                    // Wait
+                    tokio::time::sleep(Duration::from_millis(default_link.poll_wait_duration))
+                        .await;
                 }
             }
             Err(e) => {
                 info!("Failed to connect: {e}. Task: {}", task.id);
             }
         }
-        tokio::time::sleep(Duration::from_millis(1000)).await;
-        info!("Poll from task: {}", task.id);
+        tokio::time::sleep(Duration::from_millis(2000)).await;
     }
 }
 pub async fn handle_logging_task(task: Task) {

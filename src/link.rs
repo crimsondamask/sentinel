@@ -11,7 +11,7 @@ pub enum Link {
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LinkStatus {
-    Connected,
-    Disconnected,
+    Normal,
+    NeedsToReconnect,
     Error(String),
 }

@@ -3,6 +3,7 @@ use anyhow::{Result, anyhow};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
+use tracing::info;
 
 use tokio_modbus::prelude::*;
 
@@ -120,6 +121,7 @@ pub struct DeviceLink {
     pub tags: Vec<Tag>,
     pub tag_count: usize,
     pub last_poll_time: NaiveDateTime,
+    pub poll_wait_duration: u64,
 }
 
 pub enum DeviceLinkContext {
@@ -193,7 +195,7 @@ impl Tag {
                     }
                 },
                 _ => {
-                    anyhow::bail!("Link context not comatible with tag address.")
+                    anyhow::bail!("Link context not compatible with tag address.")
                 }
             },
             _ => {}
@@ -206,7 +208,14 @@ impl Tag {
 }
 
 impl DeviceLink {
-    pub fn new(name: String, tk: String, id: usize, protocol: Protocol, n_tags: usize) -> Self {
+    pub fn new(
+        name: String,
+        tk: String,
+        id: usize,
+        protocol: Protocol,
+        n_tags: usize,
+        poll_wait_duration: u64,
+    ) -> Self {
         let tag_count: usize = n_tags;
         let mut tag_list: Vec<Tag> = Vec::with_capacity(tag_count);
 
@@ -239,11 +248,12 @@ impl DeviceLink {
             name,
             enabled: false,
             protocol,
-            status: LinkStatus::Disconnected,
+            status: LinkStatus::Error("Disconnected".to_string()),
             error_message: String::from("Disconnected."),
             tags: tag_list,
             tag_count,
             last_poll_time: NaiveDateTime::default(),
+            poll_wait_duration,
         }
     }
 
@@ -254,6 +264,7 @@ impl DeviceLink {
                     format!("{}:{}", config.ip, config.port).parse()?;
                 let ctx = tcp::connect(socket_address).await?;
 
+                self.status = LinkStatus::Normal;
                 Ok(DeviceLinkContext::ModbusContext(ctx))
             }
             Protocol::ModbusSerial(config) => {
@@ -272,6 +283,8 @@ impl DeviceLink {
     }
 
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) {
+        // Reset the link status.
+        self.status = LinkStatus::Normal;
         for tag in self.tags.iter_mut() {
             if tag.enabled {
                 match tag.read(ctx).await {
@@ -285,7 +298,7 @@ impl DeviceLink {
                     }
                 }
             } else {
-                tag.status = TagStatus::Error(format!("The Tag is not initialized."));
+                tag.status = TagStatus::Error(format!("The Tag is not enabled."));
             }
         }
         self.last_poll_time = chrono::Local::now().naive_local();
@@ -298,7 +311,7 @@ impl DeviceLink {
     ) -> Result<()> {
         unimplemented!()
     }
-    pub fn reconfigure(&mut self, link_update: DeviceLink, ctx: &mut DeviceLinkContext) {
+    pub fn reconfigure(&mut self, link_update: DeviceLink) {
         // TODO
         // Need to do more checks.
         // Should the link be disconnected?
