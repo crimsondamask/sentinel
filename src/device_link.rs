@@ -143,6 +143,7 @@ impl Tag {
         }
     }
     pub async fn read(&mut self, ctx: &mut DeviceLinkContext) -> Result<()> {
+        self.status = TagStatus::Normal;
         match ctx {
             DeviceLinkContext::ModbusContext(ctx) => match &self.address {
                 TagAddress::ModbusAddr(addr) => match addr {
