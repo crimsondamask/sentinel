@@ -13,5 +13,6 @@ pub enum Link {
 pub enum LinkStatus {
     Normal,
     NeedsToReconnect,
+    PendingTagReconfig,
     Error(String),
 }

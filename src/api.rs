@@ -122,6 +122,7 @@ pub async fn reconfig_device_tag(
                         if tag.id as u32 == config.tag_info.tag_id {
                             info!("Found tag to reconfigure.");
                             *tag = config.tag_data;
+                            link.status = crate::LinkStatus::PendingTagReconfig;
                             return Ok(Json(tag.clone()));
                         }
                     }

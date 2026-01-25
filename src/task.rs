@@ -1,6 +1,5 @@
-use chrono::NaiveDateTime;
 use log::info;
-use std::{default, time::Duration};
+use std::time::Duration;
 
 use crate::{DeviceLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
@@ -70,6 +69,17 @@ pub async fn handle_link_task(task: Task) {
                 This traps the execution in an infinite loop until an error occurs.
                 */
                 loop {
+                    {
+                        match &task.state.state_db.lock().await[task.id] {
+                            Link::Device(link) => match link.status {
+                                LinkStatus::PendingTagReconfig => {
+                                    default_link = link.clone();
+                                }
+                                _ => {}
+                            },
+                            _ => {}
+                        }
+                    }
                     // Poll the device.
                     default_link.poll(&mut link_context).await;
 
@@ -119,12 +129,12 @@ pub async fn handle_link_task(task: Task) {
         tokio::time::sleep(Duration::from_millis(2000)).await;
     }
 }
-pub async fn handle_logging_task(task: Task) {
+pub async fn handle_logging_task(_task: Task) {
     loop {
         unimplemented!()
     }
 }
-pub async fn handle_eval_task(task: Task) {
+pub async fn handle_eval_task(_task: Task) {
     loop {
         unimplemented!()
     }
