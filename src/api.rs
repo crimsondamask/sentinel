@@ -1,3 +1,4 @@
+use crate::Tag;
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
@@ -14,6 +15,12 @@ pub struct LinkIdQuery {
 pub struct TagIdQuery {
     pub link_id: u32,
     pub tag_id: u32,
+}
+
+#[derive(Deserialize)]
+pub struct TagReconfigData {
+    pub tag_info: TagIdQuery,
+    pub tag_data: Tag,
 }
 
 // Return the whole config and data of the link device
@@ -69,8 +76,10 @@ pub async fn get_tag_config(
     Err(StatusCode::NOT_FOUND)
 }
 
-// Reconfig the Device Link.
-// This is a post request.
+/*
+Reconfig the Device Link.
+This is a post request.
+*/
 pub async fn reconfig_device_link(
     State(state): State<GlobalState>,
     Json(config): Json<DeviceLink>,
@@ -92,5 +101,38 @@ pub async fn reconfig_device_link(
             }
         }
     }
+    Err(StatusCode::NOT_FOUND)
+}
+
+/*
+ * Reconfig a specifig tag given the tag info in the post request.
+ * This is more granular than reconfig_device_ling.
+ */
+pub async fn reconfig_device_tag(
+    State(state): State<GlobalState>,
+    Json(config): Json<TagReconfigData>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    for link in locked_state.iter_mut() {
+        match link {
+            Link::Device(link) => {
+                if link.id as u32 == config.tag_info.link_id {
+                    for tag in link.tags.iter_mut() {
+                        if tag.id as u32 == config.tag_info.tag_id {
+                            info!("Found tag to reconfigure.");
+                            *tag = config.tag_data;
+                            return Ok(Json(tag.clone()));
+                        }
+                    }
+                }
+            }
+            _ => {
+                // TODO check for other types of tags.
+                continue;
+            }
+        }
+    }
+    info!("Could not find tag to reconfigure.");
     Err(StatusCode::NOT_FOUND)
 }

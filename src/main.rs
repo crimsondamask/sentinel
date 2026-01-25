@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
         .route("/api/get_device_link_config", post(get_device_link_config))
         .route("/api/get_tag_config", post(get_tag_config))
         .route("/api/reconfigure_device_link", post(reconfig_device_link))
+        .route("/api/reconfigure_device_tag", post(reconfig_device_tag))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
