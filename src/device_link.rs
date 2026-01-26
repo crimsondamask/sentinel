@@ -203,8 +203,127 @@ impl Tag {
         }
         Ok(())
     }
-    pub async fn write(&mut self, value: TagValue, ctx: &mut DeviceLinkContext) -> Result<()> {
-        unimplemented!()
+
+    // TODO
+    pub async fn write(&mut self, ctx: &mut DeviceLinkContext, value: TagValue) -> Result<()> {
+        self.status = TagStatus::Normal;
+        match ctx {
+            DeviceLinkContext::ModbusContext(ctx) => match &self.address {
+                TagAddress::ModbusAddr(addr) => match addr {
+                    ModbusRegister::Holding(reg) => {
+                        match self.value {
+                            TagValue::Int(_) => match value {
+                                TagValue::Int(v) => {
+                                    let _data = ctx.write_single_register(*reg, v).await?;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Dint(_) => match value {
+                                TagValue::Dint(v) => {
+                                    let bytes_array = v.to_le_bytes();
+                                    let bytes = bytes_array.split_at(1);
+                                    let h_bytes = bytes.0.try_into()?;
+                                    let l_bytes = bytes.1.try_into()?;
+                                    let u16_high = u16::from_le_bytes(h_bytes);
+                                    let u16_low = u16::from_le_bytes(l_bytes);
+                                    let data_to_write = [u16_high, u16_low];
+                                    let _data = ctx
+                                        .write_multiple_registers(*reg, &data_to_write)
+                                        .await??;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Real(_) => match value {
+                                TagValue::Real(v) => {
+                                    let bytes_array = v.to_le_bytes();
+                                    let bytes = bytes_array.split_at(1);
+                                    let h_bytes = bytes.0.try_into()?;
+                                    let l_bytes = bytes.1.try_into()?;
+                                    let u16_high = u16::from_le_bytes(h_bytes);
+                                    let u16_low = u16::from_le_bytes(l_bytes);
+                                    let data_to_write = [u16_high, u16_low];
+                                    let _data = ctx
+                                        .write_multiple_registers(*reg, &data_to_write)
+                                        .await??;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Bit(_) => {
+                                // TODO
+                                todo!()
+                            }
+                        }
+                    }
+                    ModbusRegister::Input(reg) => {
+                        match self.value {
+                            TagValue::Int(_) => match value {
+                                TagValue::Int(v) => {
+                                    let _data = ctx.write_single_register(*reg, v).await?;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Dint(_) => match value {
+                                TagValue::Dint(v) => {
+                                    let bytes_array = v.to_le_bytes();
+                                    let bytes = bytes_array.split_at(1);
+                                    let h_bytes = bytes.0.try_into()?;
+                                    let l_bytes = bytes.1.try_into()?;
+                                    let u16_high = u16::from_le_bytes(h_bytes);
+                                    let u16_low = u16::from_le_bytes(l_bytes);
+                                    let data_to_write = [u16_high, u16_low];
+                                    let _data = ctx
+                                        .write_multiple_registers(*reg, &data_to_write)
+                                        .await??;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Real(_) => match value {
+                                TagValue::Real(v) => {
+                                    let bytes_array = v.to_le_bytes();
+                                    let bytes = bytes_array.split_at(1);
+                                    let h_bytes = bytes.0.try_into()?;
+                                    let l_bytes = bytes.1.try_into()?;
+                                    let u16_high = u16::from_le_bytes(h_bytes);
+                                    let u16_low = u16::from_le_bytes(l_bytes);
+                                    let data_to_write = [u16_high, u16_low];
+                                    let _data = ctx
+                                        .write_multiple_registers(*reg, &data_to_write)
+                                        .await??;
+                                }
+                                _ => {
+                                    anyhow::bail!("Value type is incompatible with Tag type.");
+                                }
+                            },
+                            TagValue::Bit(_) => {
+                                // TODO
+                                todo!()
+                            }
+                        }
+                    }
+                    ModbusRegister::Coil(reg) => {
+                        todo!()
+                    }
+                    ModbusRegister::Status(reg) => {
+                        todo!()
+                    }
+                },
+                _ => {
+                    anyhow::bail!("Link context not compatible with tag address.")
+                }
+            },
+            _ => {}
+        }
+        Ok(())
     }
 }
 
