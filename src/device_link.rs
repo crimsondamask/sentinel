@@ -130,6 +130,12 @@ pub enum DeviceLinkContext {
     EipContext,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TagWriteInfo {
+    pub link_id: usize,
+    pub tag_id: usize,
+    pub value: TagValue,
+}
 impl Tag {
     pub fn new(name: String, tk: String, id: usize, address: TagAddress) -> Self {
         Self {
@@ -424,12 +430,17 @@ impl DeviceLink {
         self.last_poll_time = chrono::Local::now().naive_local();
     }
 
-    pub async fn write_tags(
-        &self,
-        tags_to_write: Vec<Tag>,
+    pub async fn write_tag(
+        &mut self,
+        tag_to_write: &TagWriteInfo,
         ctx: &mut DeviceLinkContext,
     ) -> Result<()> {
-        unimplemented!()
+        for tag in self.tags.iter_mut() {
+            if tag.id == tag_to_write.tag_id {
+                tag.write(ctx, tag_to_write.value.clone()).await?;
+            }
+        }
+        Ok(())
     }
     pub fn reconfigure(&mut self, link_update: DeviceLink) {
         // TODO
