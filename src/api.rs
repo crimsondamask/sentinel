@@ -1,6 +1,6 @@
-use crate::Tag;
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
+use crate::{Tag, TagValue};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
 use serde::Deserialize;
@@ -21,6 +21,12 @@ pub struct TagIdQuery {
 pub struct TagReconfigData {
     pub tag_info: TagIdQuery,
     pub tag_data: Tag,
+}
+
+#[derive(Deserialize)]
+pub struct TagWriteData {
+    pub tag_info: TagIdQuery,
+    pub tag_value: TagValue,
 }
 
 // Return the whole config and data of the link device
@@ -126,6 +132,29 @@ pub async fn reconfig_device_tag(
                             return Ok(Json(tag.clone()));
                         }
                     }
+                }
+            }
+            _ => {
+                // TODO check for other types of tags.
+                continue;
+            }
+        }
+    }
+    info!("Could not find tag to reconfigure.");
+    Err(StatusCode::NOT_FOUND)
+}
+
+pub async fn write_device_tag(
+    State(state): State<GlobalState>,
+    Json(data): Json<TagWriteData>,
+) -> Result<(), StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    for link in locked_state.iter_mut() {
+        match link {
+            Link::Device(link) => {
+                if link.id as u32 == data.tag_info.link_id {
+                    todo!()
                 }
             }
             _ => {

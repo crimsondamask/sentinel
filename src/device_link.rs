@@ -432,15 +432,16 @@ impl DeviceLink {
 
     pub async fn write_tag(
         &mut self,
-        tag_to_write: &TagWriteInfo,
+        tag_id: usize,
+        tag_value: TagValue,
         ctx: &mut DeviceLinkContext,
     ) -> Result<()> {
         for tag in self.tags.iter_mut() {
-            if tag.id == tag_to_write.tag_id {
-                tag.write(ctx, tag_to_write.value.clone()).await?;
+            if tag.id == tag_id {
+                tag.write(ctx, tag_value.clone()).await?
             }
         }
-        Ok(())
+        Err(anyhow!("Could not find tag to write."))
     }
     pub fn reconfigure(&mut self, link_update: DeviceLink) {
         // TODO

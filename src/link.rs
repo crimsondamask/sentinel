@@ -16,3 +16,7 @@ pub enum LinkStatus {
     PendingTagReconfig,
     Error(String),
 }
+
+// TODO
+// define the link interfaces here.
+impl Link {}
