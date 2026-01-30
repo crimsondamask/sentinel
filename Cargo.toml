@@ -7,6 +7,7 @@ edition = "2024"
 anyhow = "1.0.100"
 axum = "0.8.8"
 chrono = { version = "0.4.43", features = ["serde"] }
+crossbeam-channel = "0.5.15"
 jsonwebtoken = { version = "10.2.0", features = ["aws_lc_rs"] }
 log = "0.4.29"
 rust7 = "0.1.2"

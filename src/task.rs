@@ -1,3 +1,4 @@
+use crossbeam_channel::bounded;
 use log::info;
 use std::time::Duration;
 
@@ -34,7 +35,7 @@ impl Task {
     }
 }
 
-pub async fn handle_link_task(task: Task) {
+pub async fn handle_link_task(mut task: Task) {
     loop {
         // Temporary placeholder for the device link.
         let mut default_link: DeviceLink = DeviceLink::new(
@@ -80,6 +81,7 @@ pub async fn handle_link_task(task: Task) {
                             _ => {}
                         }
                     }
+
                     // Poll the device.
                     default_link.poll(&mut link_context).await;
 

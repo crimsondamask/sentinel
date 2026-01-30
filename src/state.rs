@@ -1,12 +1,12 @@
-use crate::Link;
+use crate::{Link, TagWriteData};
+use crossbeam_channel::Sender;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
 pub type StateDb = Arc<Mutex<Vec<Link>>>;
 
 // Global state. Must be clone-able because it will be shared
 // with multiple tasks.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct GlobalState {
     pub state_db: StateDb,
 }
