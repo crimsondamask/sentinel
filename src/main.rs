@@ -7,7 +7,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let modbus_tcp_config = ModbusTcpConfig::new("127.0.0.1".to_owned(), 5502);
+    let modbus_tcp_config = ModbusTcpConfig::new("192.168.0.1".to_owned(), 502);
     let protocol = Protocol::ModbusTcp(modbus_tcp_config);
 
     let mut links = Vec::new();
@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
         0,
         protocol.clone(),
         1000,
-        500,
+        1000,
     ));
 
     links.push(modbus_link);
@@ -55,6 +55,7 @@ async fn main() -> Result<()> {
         .init();
 
     let app = Router::new()
+        .route("/api/get_links_config", get(get_links_config))
         .route("/api/get_device_link_config", post(get_device_link_config))
         .route("/api/get_tag_config", post(get_tag_config))
         .route("/api/reconfigure_device_link", post(reconfig_device_link))

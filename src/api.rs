@@ -3,10 +3,10 @@ use crate::{DeviceLink, link::Link};
 use crate::{Tag, TagValue};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // Used as a link ID for the lookup.
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct LinkIdQuery {
     pub link_id: u32,
 }
@@ -27,6 +27,13 @@ pub struct TagReconfigData {
 pub struct TagWriteData {
     pub tag_info: TagIdQuery,
     pub tag_value: TagValue,
+}
+
+pub async fn get_links_config(
+    State(state): State<GlobalState>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let locked_state = state.state_db.lock().await;
+    Ok(Json(locked_state.clone()))
 }
 
 // Return the whole config and data of the link device
