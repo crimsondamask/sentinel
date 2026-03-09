@@ -3,6 +3,7 @@ use anyhow::{Result, anyhow};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
+use tokio_serial::{Parity, SerialStream};
 use tracing::info;
 
 use tokio_modbus::prelude::*;
@@ -29,12 +30,27 @@ impl ModbusTcpConfig {
 pub struct ModbusSerialConfig {
     pub com_port: String,
     pub baudrate: u32,
+    pub slave: u8,
     pub parity: ParityType,
     pub timeout: Duration,
 }
 
 impl ModbusSerialConfig {
-    // TODO!
+    pub fn new(
+        com_port: String,
+        baudrate: u32,
+        slave: u8,
+        parity: ParityType,
+        timeout: Duration,
+    ) -> Self {
+        Self {
+            com_port,
+            baudrate,
+            slave,
+            parity,
+            timeout,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -389,12 +405,16 @@ impl DeviceLink {
                 let socket_address: SocketAddr =
                     format!("{}:{}", config.ip, config.port).parse()?;
                 let ctx = tcp::connect(socket_address).await?;
-
                 self.status = LinkStatus::Normal;
                 Ok(DeviceLinkContext::ModbusContext(ctx))
             }
             Protocol::ModbusSerial(config) => {
-                todo!()
+                let builder = tokio_serial::new(config.com_port.clone(), config.baudrate);
+                let port = SerialStream::open(&builder)?;
+                let slave = Slave(config.slave);
+                let ctx = rtu::attach_slave(port, slave);
+                self.status = LinkStatus::Normal;
+                Ok(DeviceLinkContext::ModbusContext(ctx))
             }
             Protocol::S7(config) => {
                 todo!()
