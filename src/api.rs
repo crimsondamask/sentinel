@@ -152,8 +152,30 @@ pub async fn reconfig_device_tag(
 }
 
 pub async fn write_device_tag(
-    State(mut state): State<GlobalState>,
+    State(state): State<GlobalState>,
     Json(data): Json<TagWriteData>,
 ) -> Result<StatusCode, StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    for link in locked_state.iter_mut() {
+        match link {
+            Link::Device(link) => {
+                if link.id as u32 == data.tag_info.link_id {
+                    for tag in link.tags.iter_mut() {
+                        if tag.id as u32 == data.tag_info.tag_id {
+                            info!("Found tag to write.");
+                            tag.pending_write = Some(data.tag_value);
+                            return Ok(StatusCode::OK);
+                        }
+                    }
+                }
+            }
+            _ => {
+                // TODO check for other types of tags.
+                continue;
+            }
+        }
+    }
+    info!("Could not find tag to write.");
     Err(StatusCode::NOT_FOUND)
 }

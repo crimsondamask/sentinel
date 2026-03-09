@@ -123,6 +123,7 @@ pub struct Tag {
     pub enabled: bool,
     pub address: TagAddress,
     pub value: TagValue,
+    pub pending_write: Option<TagValue>,
     pub status: TagStatus,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -161,6 +162,7 @@ impl Tag {
             address,
             enabled: false,
             value: TagValue::Real(0.0),
+            pending_write: None,
             status: TagStatus::Error(String::from("Initiated.")),
         }
     }
@@ -433,6 +435,21 @@ impl DeviceLink {
         self.status = LinkStatus::Normal;
         for tag in self.tags.iter_mut() {
             if tag.enabled {
+                if let Some(write_value) = tag.pending_write.clone() {
+                    match tag.write(ctx, write_value).await {
+                        Ok(_) => {
+                            // Reset the write flag.
+                            tag.pending_write = None;
+                        }
+                        Err(e) => {
+                            tag.status = TagStatus::Error(format!("Error writing tag: {}", e));
+                            self.status = LinkStatus::Error(format!(
+                                "Writing failed at Tag: {}. Error: {}",
+                                tag.id, e
+                            ));
+                        }
+                    }
+                }
                 match tag.read(ctx).await {
                     Ok(_) => {}
                     Err(e) => {
@@ -450,19 +467,6 @@ impl DeviceLink {
         self.last_poll_time = chrono::Local::now().naive_local();
     }
 
-    pub async fn write_tag(
-        &mut self,
-        tag_id: usize,
-        tag_value: TagValue,
-        ctx: &mut DeviceLinkContext,
-    ) -> Result<()> {
-        for tag in self.tags.iter_mut() {
-            if tag.id == tag_id {
-                tag.write(ctx, tag_value.clone()).await?
-            }
-        }
-        Err(anyhow!("Could not find tag to write."))
-    }
     pub fn reconfigure(&mut self, link_update: DeviceLink) {
         // TODO
         // Need to do more checks.
