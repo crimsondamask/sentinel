@@ -3,6 +3,7 @@ use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+//#[serde(tag = "link_type")]
 pub enum Link {
     Device(DeviceLink),
     Eval,

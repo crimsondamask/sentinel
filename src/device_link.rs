@@ -68,6 +68,7 @@ pub struct EipConfig {}
 pub struct OpcUaConfig {}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+//#[serde(tag = "type")]
 pub enum Protocol {
     ModbusTcp(ModbusTcpConfig),
     ModbusSerial(ModbusSerialConfig),
@@ -134,7 +135,6 @@ pub struct DeviceLink {
     pub enabled: bool,
     pub protocol: Protocol,
     pub status: LinkStatus,
-    pub error_message: String,
     pub tags: Vec<Tag>,
     pub tag_count: usize,
     pub last_poll_time: NaiveDateTime,
@@ -393,7 +393,6 @@ impl DeviceLink {
             enabled: false,
             protocol,
             status: LinkStatus::Error("Disconnected".to_string()),
-            error_message: String::from("Disconnected."),
             tags: tag_list,
             tag_count,
             last_poll_time: NaiveDateTime::default(),
