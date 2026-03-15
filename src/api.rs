@@ -151,7 +151,7 @@ pub async fn reconfig_device_tag(
     Err(StatusCode::NOT_FOUND)
 }
 
-pub async fn write_device_tag(
+pub async fn write_link_tag(
     State(state): State<GlobalState>,
     Json(data): Json<TagWriteData>,
 ) -> Result<StatusCode, StatusCode> {
@@ -163,8 +163,9 @@ pub async fn write_device_tag(
                 if link.id as u32 == data.tag_info.link_id {
                     for tag in link.tags.iter_mut() {
                         if tag.id as u32 == data.tag_info.tag_id {
-                            info!("Found tag to write.");
+                            info!("Found tag to write. Value: {:?}", &data.tag_value);
                             tag.pending_write = Some(data.tag_value);
+
                             return Ok(StatusCode::OK);
                         }
                     }
