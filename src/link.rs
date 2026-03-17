@@ -1,5 +1,4 @@
-use crate::device_link::*;
-use anyhow::{Result, anyhow};
+use crate::{InputsLink, device_link::*};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -7,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub enum Link {
     Device(DeviceLink),
     Eval,
-    InputDb,
+    Inputs(InputsLink),
     MbServer,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

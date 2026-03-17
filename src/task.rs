@@ -9,6 +9,7 @@ use crate::GlobalState;
 
 pub enum TaskType {
     DeviceLink,
+    Inputs,
     Logging,
     Eval,
 }
@@ -136,6 +137,9 @@ pub async fn handle_logging_task(_task: Task) {
         unimplemented!()
     }
 }
+pub async fn handle_inputs_task(task: Task) {
+    loop {}
+}
 pub async fn handle_eval_task(_task: Task) {
     loop {
         unimplemented!()
@@ -152,6 +156,9 @@ pub fn spawn(task: Task) -> Result<()> {
         }
         TaskType::Eval => {
             tokio::spawn(handle_eval_task(task));
+        }
+        TaskType::Inputs => {
+            tokio::spawn(handle_inputs_task(task));
         }
     }
     Ok(())

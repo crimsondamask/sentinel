@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::routing::post;
 use axum::{Json, Router, routing::get};
 use sentinel::state::GlobalState;
-use sentinel::{DeviceLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
+use sentinel::{DeviceLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -32,6 +32,14 @@ async fn main() -> Result<()> {
     ));
     links.push(modbus_link);
 
+    let inputs_link = Link::Inputs(InputsLink::new(
+        2,
+        "IN".to_owned(),
+        "INPUTS".to_owned(),
+        1000,
+    ));
+    links.push(inputs_link);
+
     let state = GlobalState::new(links.clone());
 
     // Spawn a task for each link.
@@ -39,6 +47,7 @@ async fn main() -> Result<()> {
         let state_for_link = state.clone();
         let link_id = match link {
             Link::Device(link) => link.id,
+            Link::Inputs(link) => link.id,
             _ => 11,
         };
         let task = Task::new(sentinel::TaskType::DeviceLink, state_for_link, link_id);

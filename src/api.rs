@@ -171,6 +171,17 @@ pub async fn write_link_tag(
                     }
                 }
             }
+            Link::Inputs(link) => {
+                if link.id as u32 == data.tag_info.link_id {
+                    for tag in link.tags.iter_mut() {
+                        if tag.id as u32 == data.tag_info.tag_id {
+                            info!("Found tag to write. Value: {:?}", &data.tag_value);
+                            tag.value = data.tag_value;
+                            return Ok(StatusCode::OK);
+                        }
+                    }
+                }
+            }
             _ => {
                 // TODO check for other types of tags.
                 continue;
