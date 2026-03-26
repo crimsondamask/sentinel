@@ -45,13 +45,17 @@ async fn main() -> Result<()> {
     // Spawn a task for each link.
     for link in links.iter() {
         let state_for_link = state.clone();
-        let link_id = match link {
-            Link::Device(link) => link.id,
-            Link::Inputs(link) => link.id,
-            _ => 11,
+        match link {
+            Link::Device(link) => {
+                let task = Task::new(sentinel::TaskType::DeviceLink, state_for_link, link.id);
+                sentinel::task::spawn(task)?;
+            }
+            Link::Inputs(link) => {
+                let task = Task::new(sentinel::TaskType::Inputs, state_for_link, link.id);
+                sentinel::task::spawn(task)?;
+            }
+            _ => {}
         };
-        let task = Task::new(sentinel::TaskType::DeviceLink, state_for_link, link_id);
-        sentinel::task::spawn(task)?;
     }
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -70,6 +74,7 @@ async fn main() -> Result<()> {
         .route("/api/reconfigure_device_link", post(reconfig_device_link))
         .route("/api/reconfigure_device_tag", post(reconfig_device_tag))
         .route("/api/write_tag", post(write_link_tag))
+        .route("/api/reconfig_links", post(reconfig_links))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

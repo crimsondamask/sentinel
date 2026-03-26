@@ -1,6 +1,10 @@
+use axum::extract::rejection::JsonRejection;
+use std::usize::MAX;
+use tracing::instrument;
+
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
-use crate::{Tag, TagValue};
+use crate::{MAX_NUM_LINKS, Tag, TagValue};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -11,13 +15,13 @@ pub struct LinkIdQuery {
     pub link_id: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TagIdQuery {
     pub link_id: u32,
     pub tag_id: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TagReconfigData {
     pub tag_info: TagIdQuery,
     pub tag_data: Tag,
@@ -36,6 +40,28 @@ pub async fn get_links_config(
     Ok(Json(locked_state.clone()))
 }
 
+pub async fn reconfig_links(
+    State(state): State<GlobalState>,
+    Json(mut links): Json<Vec<Link>>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    if links.len() > MAX_NUM_LINKS {
+        return Err(StatusCode::NOT_FOUND);
+    } else {
+        for link in links.iter_mut() {
+            match link {
+                Link::Device(link) => {
+                    link.status = crate::LinkStatus::PendingTagReconfig;
+                }
+                _ => {}
+            }
+        }
+
+        *locked_state = links;
+        return Ok(StatusCode::OK);
+    }
+}
 // Return the whole config and data of the link device
 // specified by the link_id
 pub async fn get_device_link_config(
@@ -123,28 +149,37 @@ pub async fn reconfig_device_link(
  */
 pub async fn reconfig_device_tag(
     State(state): State<GlobalState>,
-    Json(config): Json<TagReconfigData>,
+    //Json(config): Json<TagReconfigData>,
+    payload: Result<Json<TagReconfigData>, JsonRejection>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let mut locked_state = state.state_db.lock().await;
 
-    for link in locked_state.iter_mut() {
-        match link {
-            Link::Device(link) => {
-                if link.id as u32 == config.tag_info.link_id {
-                    for tag in link.tags.iter_mut() {
-                        if tag.id as u32 == config.tag_info.tag_id {
-                            info!("Found tag to reconfigure.");
-                            *tag = config.tag_data;
-                            link.status = crate::LinkStatus::PendingTagReconfig;
-                            return Ok(Json(tag.clone()));
+    match payload {
+        Ok(config) => {
+            for link in locked_state.iter_mut() {
+                match link {
+                    Link::Device(link) => {
+                        if link.id as u32 == config.tag_info.link_id {
+                            for tag in link.tags.iter_mut() {
+                                if tag.id as u32 == config.tag_info.tag_id {
+                                    info!("Found tag to reconfigure.");
+                                    *tag = config.tag_data.clone();
+                                    link.status = crate::LinkStatus::PendingTagReconfig;
+                                    return Ok(Json(tag.clone()));
+                                }
+                            }
                         }
+                    }
+                    _ => {
+                        // TODO check for other types of tags.
+                        continue;
                     }
                 }
             }
-            _ => {
-                // TODO check for other types of tags.
-                continue;
-            }
+        }
+        Err(e) => {
+            info!("{}", e);
+            return Err(StatusCode::NOT_FOUND);
         }
     }
     info!("Could not find tag to reconfigure.");

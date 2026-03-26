@@ -124,6 +124,7 @@ pub struct Tag {
     pub enabled: bool,
     pub address: TagAddress,
     pub value: TagValue,
+    #[serde(skip)]
     pub pending_write: Option<TagValue>,
     pub status: TagStatus,
 }

@@ -72,10 +72,11 @@ pub async fn handle_link_task(mut task: Task) {
                 */
                 loop {
                     {
-                        match &task.state.state_db.lock().await[task.id] {
+                        match &mut task.state.state_db.lock().await[task.id] {
                             Link::Device(link) => match link.status {
                                 LinkStatus::PendingTagReconfig => {
                                     default_link = link.clone();
+                                    link.status = LinkStatus::Normal;
                                 }
                                 _ => {}
                             },
