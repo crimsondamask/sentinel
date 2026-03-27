@@ -2,7 +2,7 @@ use crossbeam_channel::bounded;
 use log::info;
 use std::time::Duration;
 
-use crate::{DeviceLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
+use crate::{DeviceLink, EvalLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
 
 use crate::GlobalState;
@@ -36,7 +36,7 @@ impl Task {
     }
 }
 
-pub async fn handle_link_task(mut task: Task) {
+pub async fn handle_link_task(task: Task) {
     loop {
         // Temporary placeholder for the device link.
         let mut default_link: DeviceLink = DeviceLink::new(
@@ -77,6 +77,9 @@ pub async fn handle_link_task(mut task: Task) {
                                 LinkStatus::PendingTagReconfig => {
                                     default_link = link.clone();
                                     link.status = LinkStatus::Normal;
+                                }
+                                LinkStatus::NeedsToReconnect => {
+                                    default_link = link.clone();
                                 }
                                 _ => {}
                             },
@@ -138,12 +141,36 @@ pub async fn handle_logging_task(_task: Task) {
         unimplemented!()
     }
 }
-pub async fn handle_inputs_task(task: Task) {
+pub async fn handle_inputs_task(_task: Task) {
     loop {}
 }
-pub async fn handle_eval_task(_task: Task) {
+pub async fn handle_eval_task(task: Task) {
+    let mut default_link = EvalLink::new(task.id, "EVAL".to_owned(), 1000);
+    let mut links_list = Vec::new();
+
     loop {
-        unimplemented!()
+        // Lock the mutex and update.
+        {
+            let locked_state = task.state.state_db.lock().await;
+            match &locked_state[task.id] {
+                Link::Eval(config) => {
+                    default_link = config.clone();
+                }
+                _ => {}
+            }
+
+            links_list = locked_state.clone();
+        }
+
+        for eval in default_link.tags.iter_mut() {
+            eval.evaluate(&links_list);
+        }
+
+        {
+            // Lock the mutex and update.
+            task.state.state_db.lock().await[task.id] = Link::Eval(default_link.clone());
+        }
+        tokio::time::sleep(Duration::from_millis(1000)).await;
     }
 }
 

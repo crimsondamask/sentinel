@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::routing::post;
 use axum::{Json, Router, routing::get};
 use sentinel::state::GlobalState;
-use sentinel::{DeviceLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
+use sentinel::{DeviceLink, EvalLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -40,6 +40,9 @@ async fn main() -> Result<()> {
     ));
     links.push(inputs_link);
 
+    let evals_link = Link::Eval(EvalLink::new(3, "EVAL".to_string(), 1000));
+    links.push(evals_link);
+
     let state = GlobalState::new(links.clone());
 
     // Spawn a task for each link.
@@ -52,6 +55,10 @@ async fn main() -> Result<()> {
             }
             Link::Inputs(link) => {
                 let task = Task::new(sentinel::TaskType::Inputs, state_for_link, link.id);
+                sentinel::task::spawn(task)?;
+            }
+            Link::Eval(link) => {
+                let task = Task::new(sentinel::TaskType::Eval, state_for_link, link.id);
                 sentinel::task::spawn(task)?;
             }
             _ => {}

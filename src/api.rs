@@ -52,7 +52,7 @@ pub async fn reconfig_links(
         for link in links.iter_mut() {
             match link {
                 Link::Device(link) => {
-                    link.status = crate::LinkStatus::PendingTagReconfig;
+                    link.status = crate::LinkStatus::NeedsToReconnect;
                 }
                 _ => {}
             }
