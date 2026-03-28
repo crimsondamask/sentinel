@@ -1,6 +1,6 @@
-use crate::{Input, Link, Tag, TagStatus, TagValue};
+use crate::{Input, Link, LinkStatus, Tag, TagStatus, TagValue};
 use anyhow::Result;
-use rhai::{Engine, EvalAltResult, Scope};
+use rhai::{AST, Engine, EvalAltResult, Scope};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -41,6 +41,8 @@ pub struct EvalLink {
     pub enabled: bool,
     pub tags: Vec<Eval>,
     pub tag_count: usize,
+    #[serde(skip)]
+    pub status: LinkStatus,
 }
 
 impl Eval {
@@ -112,7 +114,7 @@ impl Eval {
                         }
                         match tag.value {
                             TagValue::Real(v) => {
-                                scope.push(&var.name, v as f64);
+                                scope.push(&var.name, v as f32);
                             }
                             TagValue::Int(v) => {
                                 scope.push(&var.name, v as i64);
@@ -135,7 +137,7 @@ impl Eval {
                         }
                         match tag.value {
                             TagValue::Real(v) => {
-                                scope.push(&var.name, v as f64);
+                                scope.push(&var.name, v as f32);
                             }
                             TagValue::Int(v) => {
                                 scope.push(&var.name, v as i64);
@@ -158,7 +160,7 @@ impl Eval {
                         }
                         match tag.value {
                             TagValue::Real(v) => {
-                                scope.push(&var.name, v as f64);
+                                scope.push(&var.name, v as f32);
                             }
                             TagValue::Int(v) => {
                                 scope.push(&var.name, v as i64);
@@ -177,30 +179,42 @@ impl Eval {
             // Evaluate the formula.
             match self.value {
                 TagValue::Real(_) => {
-                    let res = engine.eval_with_scope::<f64>(&mut scope, &self.formula);
+                    let res = engine.eval_expression_with_scope::<f32>(&mut scope, &self.formula);
                     match res {
-                        Ok(res) => self.value = TagValue::Real(res as f32),
+                        Ok(res) => {
+                            self.value = TagValue::Real(res as f32);
+                            self.status = TagStatus::Normal;
+                        }
                         Err(e) => self.status = TagStatus::Error(e.to_string()),
                     }
                 }
                 TagValue::Int(_) => {
-                    let res = engine.eval_with_scope::<i64>(&mut scope, &self.formula);
+                    let res = engine.eval_expression_with_scope::<i64>(&mut scope, &self.formula);
                     match res {
-                        Ok(res) => self.value = TagValue::Int(res as u16),
+                        Ok(res) => {
+                            self.status = TagStatus::Normal;
+                            self.value = TagValue::Int(res as u16);
+                        }
                         Err(e) => self.status = TagStatus::Error(e.to_string()),
                     }
                 }
                 TagValue::Dint(_) => {
-                    let res = engine.eval_with_scope::<i64>(&mut scope, &self.formula);
+                    let res = engine.eval_expression_with_scope::<i64>(&mut scope, &self.formula);
                     match res {
-                        Ok(res) => self.value = TagValue::Dint(res as u32),
+                        Ok(res) => {
+                            self.value = TagValue::Dint(res as u32);
+                            self.status = TagStatus::Normal;
+                        }
                         Err(e) => self.status = TagStatus::Error(e.to_string()),
                     }
                 }
                 TagValue::Bit(_) => {
-                    let res = engine.eval_with_scope::<bool>(&mut scope, &self.formula);
+                    let res = engine.eval_expression_with_scope::<bool>(&mut scope, &self.formula);
                     match res {
-                        Ok(res) => self.value = TagValue::Bit(res),
+                        Ok(res) => {
+                            self.value = TagValue::Bit(res);
+                            self.status = TagStatus::Normal;
+                        }
                         Err(e) => self.status = TagStatus::Error(e.to_string()),
                     }
                 }
@@ -227,6 +241,7 @@ impl EvalLink {
             enabled: true,
             tags,
             tag_count,
+            status: LinkStatus::Normal,
         }
     }
 }

@@ -1,6 +1,7 @@
-use crossbeam_channel::bounded;
 use log::info;
+use rhai::{AST, Engine};
 use std::time::Duration;
+use tokio::runtime::Runtime;
 
 use crate::{DeviceLink, EvalLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
@@ -145,15 +146,17 @@ pub async fn handle_inputs_task(_task: Task) {
     loop {}
 }
 pub async fn handle_eval_task(task: Task) {
+    // Store all the eval ASTs here and only update them if triggered by PendingTagReconfig.
     let mut default_link = EvalLink::new(task.id, "EVAL".to_owned(), 1000);
     let mut links_list = Vec::new();
 
     loop {
         // Lock the mutex and update.
         {
-            let locked_state = task.state.state_db.lock().await;
-            match &locked_state[task.id] {
+            let mut locked_state = task.state.state_db.lock().await;
+            match &mut locked_state[task.id] {
                 Link::Eval(config) => {
+                    config.status = LinkStatus::Normal;
                     default_link = config.clone();
                 }
                 _ => {}
@@ -162,15 +165,30 @@ pub async fn handle_eval_task(task: Task) {
             links_list = locked_state.clone();
         }
 
+        let now = std::time::Instant::now();
         for eval in default_link.tags.iter_mut() {
             eval.evaluate(&links_list);
         }
 
+        let duration = now.elapsed();
+
+        info!("Elapsed time: {}", duration.as_millis());
         {
             // Lock the mutex and update.
-            task.state.state_db.lock().await[task.id] = Link::Eval(default_link.clone());
+            let locked_link = &mut task.state.state_db.lock().await[task.id];
+            match locked_link {
+                Link::Eval(link) => match link.status {
+                    LinkStatus::PendingTagReconfig => {
+                        continue;
+                    }
+                    _ => {
+                        *locked_link = Link::Eval(default_link.clone());
+                    }
+                },
+                _ => {}
+            }
         }
-        tokio::time::sleep(Duration::from_millis(1000)).await;
+        //tokio::time::sleep(Duration::from_millis(1000)).await;
     }
 }
 

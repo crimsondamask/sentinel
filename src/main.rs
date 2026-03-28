@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
         0,
         protocol.clone(),
         1000,
-        1000,
+        500,
     ));
 
     links.push(modbus_link);
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     links.push(inputs_link);
 
     let evals_link = Link::Eval(EvalLink::new(2, "EVAL".to_string(), 1000));
-    //links.push(evals_link);
+    links.push(evals_link);
 
     let state = GlobalState::new(links.clone());
 

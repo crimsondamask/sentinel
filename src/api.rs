@@ -54,6 +54,9 @@ pub async fn reconfig_links(
                 Link::Device(link) => {
                     link.status = crate::LinkStatus::NeedsToReconnect;
                 }
+                Link::Eval(link) => {
+                    link.status = crate::LinkStatus::PendingTagReconfig;
+                }
                 _ => {}
             }
         }
