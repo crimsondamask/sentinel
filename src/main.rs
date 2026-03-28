@@ -7,7 +7,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let modbus_tcp_config = ModbusTcpConfig::new("192.168.0.1".to_owned(), 502);
+    let modbus_tcp_config = ModbusTcpConfig::new("127.0.0.1".to_owned(), 5502);
     let protocol = Protocol::ModbusTcp(modbus_tcp_config);
 
     let mut links = Vec::new();
@@ -22,26 +22,29 @@ async fn main() -> Result<()> {
 
     links.push(modbus_link);
 
+    /*
+    *
     let modbus_link = Link::Device(DeviceLink::new(
         "MB_LINK2".to_owned(),
         "LK2".to_owned(),
         1,
         protocol,
         1000,
-        500,
+        1000,
     ));
     links.push(modbus_link);
+    */
 
     let inputs_link = Link::Inputs(InputsLink::new(
-        2,
+        1,
         "IN".to_owned(),
         "INPUTS".to_owned(),
         1000,
     ));
     links.push(inputs_link);
 
-    let evals_link = Link::Eval(EvalLink::new(3, "EVAL".to_string(), 1000));
-    links.push(evals_link);
+    let evals_link = Link::Eval(EvalLink::new(2, "EVAL".to_string(), 1000));
+    //links.push(evals_link);
 
     let state = GlobalState::new(links.clone());
 
