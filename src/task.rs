@@ -13,6 +13,7 @@ pub enum TaskType {
     Inputs,
     Logging,
     Eval,
+    ConfigHash,
 }
 
 pub enum TaskMessage {
@@ -145,6 +146,16 @@ pub async fn handle_logging_task(_task: Task) {
 pub async fn handle_inputs_task(_task: Task) {
     loop {}
 }
+pub async fn handle_hash_task(task: Task) {
+    loop {
+        {
+            // TODO
+            let mut locked_hash = task.state.current_config_hash.lock().await;
+            let mut locked_state = task.state.state_db.lock().await;
+        }
+        tokio::time::sleep(Duration::from_millis(1000)).await;
+    }
+}
 pub async fn handle_eval_task(task: Task) {
     // Store all the eval ASTs here and only update them if triggered by PendingTagReconfig.
     let mut default_link = EvalLink::new(task.id, "EVAL".to_owned(), 1000);
@@ -205,6 +216,9 @@ pub fn spawn(task: Task) -> Result<()> {
         }
         TaskType::Inputs => {
             tokio::spawn(handle_inputs_task(task));
+        }
+        TaskType::ConfigHash => {
+            tokio::spawn(handle_hash_task(task));
         }
     }
     Ok(())

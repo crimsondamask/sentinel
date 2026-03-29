@@ -109,6 +109,11 @@ pub enum TagValue {
     Bit(bool),
 }
 
+impl Default for TagValue {
+    fn default() -> Self {
+        Self::Real(0.0)
+    }
+}
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TagStatus {
     Normal,
@@ -116,6 +121,13 @@ pub enum TagStatus {
     Warn,
     Alarm,
 }
+
+impl Default for TagStatus {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tag {
     pub id: usize,
@@ -123,9 +135,11 @@ pub struct Tag {
     pub name: String,
     pub enabled: bool,
     pub address: TagAddress,
+    #[serde(skip_deserializing)]
     pub value: TagValue,
     #[serde(skip)]
     pub pending_write: Option<TagValue>,
+    #[serde(skip_deserializing)]
     pub status: TagStatus,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

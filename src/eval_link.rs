@@ -30,7 +30,9 @@ pub struct Eval {
     pub vars: Vec<EvalInputVar>,
     // Formula that might include variables.
     pub formula: String,
+    #[serde(skip_deserializing)]
     pub value: TagValue,
+    #[serde(skip_deserializing)]
     pub status: TagStatus,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -179,7 +181,7 @@ impl Eval {
             // Evaluate the formula.
             match self.value {
                 TagValue::Real(_) => {
-                    let res = engine.eval_expression_with_scope::<f32>(&mut scope, &self.formula);
+                    let res = engine.eval_with_scope::<f32>(&mut scope, &self.formula);
                     match res {
                         Ok(res) => {
                             self.value = TagValue::Real(res as f32);
@@ -189,7 +191,7 @@ impl Eval {
                     }
                 }
                 TagValue::Int(_) => {
-                    let res = engine.eval_expression_with_scope::<i64>(&mut scope, &self.formula);
+                    let res = engine.eval_with_scope::<i64>(&mut scope, &self.formula);
                     match res {
                         Ok(res) => {
                             self.status = TagStatus::Normal;
@@ -199,7 +201,7 @@ impl Eval {
                     }
                 }
                 TagValue::Dint(_) => {
-                    let res = engine.eval_expression_with_scope::<i64>(&mut scope, &self.formula);
+                    let res = engine.eval_with_scope::<i64>(&mut scope, &self.formula);
                     match res {
                         Ok(res) => {
                             self.value = TagValue::Dint(res as u32);
@@ -209,7 +211,7 @@ impl Eval {
                     }
                 }
                 TagValue::Bit(_) => {
-                    let res = engine.eval_expression_with_scope::<bool>(&mut scope, &self.formula);
+                    let res = engine.eval_with_scope::<bool>(&mut scope, &self.formula);
                     match res {
                         Ok(res) => {
                             self.value = TagValue::Bit(res);

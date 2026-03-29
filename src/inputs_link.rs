@@ -8,6 +8,7 @@ pub struct Input {
     pub tk: String,
     pub name: String,
     pub enabled: bool,
+    #[serde(skip_deserializing)]
     pub value: TagValue,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
