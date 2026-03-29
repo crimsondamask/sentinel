@@ -3,48 +3,59 @@ use axum::routing::post;
 use axum::{Json, Router, routing::get};
 use sentinel::state::GlobalState;
 use sentinel::{DeviceLink, EvalLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
+use tokio::fs;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let modbus_tcp_config = ModbusTcpConfig::new("127.0.0.1".to_owned(), 5502);
-    let protocol = Protocol::ModbusTcp(modbus_tcp_config);
-
     let mut links = Vec::new();
-    let modbus_link = Link::Device(DeviceLink::new(
-        "MB_LINK".to_owned(),
-        "LK1".to_owned(),
-        0,
-        protocol.clone(),
-        1000,
-        500,
-    ));
 
-    links.push(modbus_link);
+    let config_string = fs::read_to_string("./CurrentConfig/current_config.json");
+    if let Ok(config_string) = config_string.await {
+        if let Ok(data) = serde_json::from_str(config_string.as_str()) {
+            links = data;
+        }
+    }
 
-    /*
-    *
-    let modbus_link = Link::Device(DeviceLink::new(
-        "MB_LINK2".to_owned(),
-        "LK2".to_owned(),
-        1,
-        protocol,
-        1000,
-        1000,
-    ));
-    links.push(modbus_link);
-    */
+    if links.is_empty() {
+        let modbus_tcp_config = ModbusTcpConfig::new("127.0.0.1".to_owned(), 5502);
+        let protocol = Protocol::ModbusTcp(modbus_tcp_config);
 
-    let inputs_link = Link::Inputs(InputsLink::new(
-        1,
-        "IN".to_owned(),
-        "INPUTS".to_owned(),
-        1000,
-    ));
-    links.push(inputs_link);
+        let modbus_link = Link::Device(DeviceLink::new(
+            "MB_LINK".to_owned(),
+            "LK1".to_owned(),
+            0,
+            protocol.clone(),
+            1000,
+            500,
+        ));
 
-    let evals_link = Link::Eval(EvalLink::new(2, "EVAL".to_string(), 1000));
-    links.push(evals_link);
+        links.push(modbus_link);
+
+        /*
+        *
+        let modbus_link = Link::Device(DeviceLink::new(
+            "MB_LINK2".to_owned(),
+            "LK2".to_owned(),
+            1,
+            protocol,
+            1000,
+            1000,
+        ));
+        links.push(modbus_link);
+        */
+
+        let inputs_link = Link::Inputs(InputsLink::new(
+            1,
+            "IN".to_owned(),
+            "INPUTS".to_owned(),
+            1000,
+        ));
+        links.push(inputs_link);
+
+        let evals_link = Link::Eval(EvalLink::new(2, "EVAL".to_string(), 1000));
+        links.push(evals_link);
+    }
 
     let state = GlobalState::new(links.clone());
 

@@ -1,13 +1,14 @@
-use axum::extract::rejection::JsonRejection;
-use std::usize::MAX;
-use tracing::instrument;
-
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
 use crate::{MAX_NUM_LINKS, Tag, TagValue};
+use axum::extract::rejection::JsonRejection;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::BufWriter;
+use std::usize::MAX;
+use tracing::instrument;
 
 // Used as a link ID for the lookup.
 #[derive(Serialize, Deserialize)]
@@ -61,7 +62,19 @@ pub async fn reconfig_links(
             }
         }
 
-        *locked_state = links;
+        *locked_state = links.clone();
+
+        let file = File::create("./CurrentConfig/current_config.json");
+        if let Ok(file) = file {
+            let mut writer = BufWriter::new(file);
+            if let Ok(_) = serde_json::to_writer_pretty(&mut writer, &links) {
+                info!("Success");
+            } else {
+                info!("error");
+            }
+        } else {
+            info!("Could not create file");
+        }
         return Ok(StatusCode::OK);
     }
 }
