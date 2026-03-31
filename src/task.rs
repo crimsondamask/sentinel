@@ -1,7 +1,6 @@
 use log::info;
-use rhai::{AST, Engine};
 use std::time::Duration;
-use tokio::runtime::Runtime;
+use tokio::time::{self, Interval};
 
 use crate::{DeviceLink, EvalLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
@@ -72,6 +71,8 @@ pub async fn handle_link_task(task: Task) {
                 inside a loop.
                 This traps the execution in an infinite loop until an error occurs.
                 */
+                let mut interval = time::interval(Duration::from_millis(500));
+                interval.tick().await;
                 loop {
                     {
                         match &mut task.state.state_db.lock().await[task.id] {
@@ -127,8 +128,9 @@ pub async fn handle_link_task(task: Task) {
                     }
 
                     // Wait
-                    tokio::time::sleep(Duration::from_millis(default_link.poll_wait_duration))
-                        .await;
+                    interval.tick().await;
+                    //tokio::time::sleep(Duration::from_millis(default_link.poll_wait_duration))
+                    //.await;
                 }
             }
             Err(e) => {
@@ -160,9 +162,14 @@ pub async fn handle_eval_task(task: Task) {
     // Store all the eval ASTs here and only update them if triggered by PendingTagReconfig.
     let mut default_link = EvalLink::new(task.id, "EVAL".to_owned(), 1000);
     let mut links_list = Vec::new();
+    let mut interval = time::interval(Duration::from_millis(500));
+
+    interval.tick().await;
 
     loop {
         // Lock the mutex and update.
+        let now = std::time::Instant::now();
+        interval.tick().await;
         {
             let mut locked_state = task.state.state_db.lock().await;
             match &mut locked_state[task.id] {
@@ -176,14 +183,13 @@ pub async fn handle_eval_task(task: Task) {
             links_list = locked_state.clone();
         }
 
-        let now = std::time::Instant::now();
         for eval in default_link.tags.iter_mut() {
             eval.evaluate(&links_list);
         }
 
         let duration = now.elapsed();
 
-        info!("Elapsed time: {}", duration.as_millis());
+        info!("Evaluation Elapsed time: {}", duration.as_millis());
         {
             // Lock the mutex and update.
             let locked_link = &mut task.state.state_db.lock().await[task.id];
@@ -199,7 +205,6 @@ pub async fn handle_eval_task(task: Task) {
                 _ => {}
             }
         }
-        //tokio::time::sleep(Duration::from_millis(1000)).await;
     }
 }
 

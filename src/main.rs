@@ -4,6 +4,7 @@ use axum::{Json, Router, routing::get};
 use sentinel::state::GlobalState;
 use sentinel::{DeviceLink, EvalLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
 use tokio::fs;
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -81,7 +82,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .or_else(|_| EnvFilter::try_new("sentinel=info,tower_http=info"))
+                .or_else(|_| EnvFilter::try_new("sentinel=trace,tower_http=trace"))
                 .unwrap(),
         )
         .compact()
@@ -96,6 +97,7 @@ async fn main() -> Result<()> {
         .route("/api/reconfigure_device_tag", post(reconfig_device_tag))
         .route("/api/write_tag", post(write_link_tag))
         .route("/api/reconfig_links", post(reconfig_links))
+        .layer(TraceLayer::new_for_http())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
