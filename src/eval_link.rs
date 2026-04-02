@@ -30,7 +30,6 @@ pub struct Eval {
     pub vars: Vec<EvalInputVar>,
     // Formula that might include variables.
     pub formula: String,
-    #[serde(skip_deserializing)]
     pub value: TagValue,
     #[serde(skip_deserializing)]
     pub status: TagStatus,

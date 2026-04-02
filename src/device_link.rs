@@ -135,7 +135,6 @@ pub struct Tag {
     pub name: String,
     pub enabled: bool,
     pub address: TagAddress,
-    #[serde(skip_deserializing)]
     pub value: TagValue,
     #[serde(skip)]
     pub pending_write: Option<TagValue>,
