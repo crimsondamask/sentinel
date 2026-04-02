@@ -15,7 +15,7 @@ pub struct EvalInputVar {
     pub name: String,
     pub link_id: usize,
     pub tag_id: usize,
-    pub var: EvalInputVarType,
+    pub value: TagValue,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -69,7 +69,14 @@ impl Eval {
                             if link.id == var.link_id {
                                 for tag in &link.tags {
                                     if tag.id == var.tag_id {
-                                        var.var = EvalInputVarType::DeviceTag(tag.clone());
+                                        if !tag.enabled {
+                                            self.status = TagStatus::Error(
+                                                "Variable in the formula is not enabled."
+                                                    .to_string(),
+                                            );
+                                            return;
+                                        }
+                                        var.value = tag.value.clone();
                                         break;
                                     }
                                 }
@@ -79,7 +86,14 @@ impl Eval {
                             if link.id == var.link_id {
                                 for tag in &link.tags {
                                     if tag.id == var.tag_id {
-                                        var.var = EvalInputVarType::InputTag(tag.clone());
+                                        if !tag.enabled {
+                                            self.status = TagStatus::Error(
+                                                "Variable in the formula is not enabled."
+                                                    .to_string(),
+                                            );
+                                            return;
+                                        }
+                                        var.value = tag.value.clone();
                                         break;
                                     }
                                 }
@@ -89,7 +103,14 @@ impl Eval {
                             if link.id == var.link_id {
                                 for tag in &link.tags {
                                     if tag.id == var.tag_id {
-                                        var.var = EvalInputVarType::EvalTag(tag.clone());
+                                        if !tag.enabled {
+                                            self.status = TagStatus::Error(
+                                                "Variable in the formula is not enabled."
+                                                    .to_string(),
+                                            );
+                                            return;
+                                        }
+                                        var.value = tag.value.clone();
                                         break;
                                     }
                                 }
@@ -104,75 +125,18 @@ impl Eval {
             let mut scope = Scope::new();
 
             for var in self.vars.iter_mut() {
-                match &var.var {
-                    EvalInputVarType::DeviceTag(tag) => {
-                        if !tag.enabled {
-                            self.status = TagStatus::Error(format!(
-                                "Eval contains a variable that is not enabled: {}
-                               ",
-                                &tag.tk
-                            ));
-                        }
-                        match tag.value {
-                            TagValue::Real(v) => {
-                                scope.push(&var.name, v as f32);
-                            }
-                            TagValue::Int(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                            TagValue::Bit(v) => {
-                                scope.push(&var.name, v);
-                            }
-                            TagValue::Dint(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                        }
+                match var.value {
+                    TagValue::Real(v) => {
+                        scope.push(&var.name, v as f32);
                     }
-                    EvalInputVarType::InputTag(tag) => {
-                        if !tag.enabled {
-                            self.status = TagStatus::Error(format!(
-                                "Eval contains a variable that is not enabled: {}
-                               ",
-                                &tag.tk
-                            ));
-                        }
-                        match tag.value {
-                            TagValue::Real(v) => {
-                                scope.push(&var.name, v as f32);
-                            }
-                            TagValue::Int(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                            TagValue::Bit(v) => {
-                                scope.push(&var.name, v);
-                            }
-                            TagValue::Dint(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                        }
+                    TagValue::Int(v) => {
+                        scope.push(&var.name, v as i64);
                     }
-                    EvalInputVarType::EvalTag(tag) => {
-                        if !tag.enabled {
-                            self.status = TagStatus::Error(format!(
-                                "Eval contains a variable that is not enabled: {}
-                               ",
-                                &tag.tk
-                            ));
-                        }
-                        match tag.value {
-                            TagValue::Real(v) => {
-                                scope.push(&var.name, v as f32);
-                            }
-                            TagValue::Int(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                            TagValue::Bit(v) => {
-                                scope.push(&var.name, v);
-                            }
-                            TagValue::Dint(v) => {
-                                scope.push(&var.name, v as i64);
-                            }
-                        }
+                    TagValue::Bit(v) => {
+                        scope.push(&var.name, v);
+                    }
+                    TagValue::Dint(v) => {
+                        scope.push(&var.name, v as i64);
                     }
                 }
             }
