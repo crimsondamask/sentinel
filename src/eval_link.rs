@@ -48,12 +48,23 @@ pub struct EvalLink {
 
 impl Eval {
     pub fn new(id: usize, tk: String, name: String) -> Self {
+        let mut vars = Vec::new();
+        for i in 0..5 {
+            let var = EvalInputVar {
+                name: format!("x{i}"),
+                link_id: 1,
+                tag_id: i,
+                value: TagValue::Real(0.0),
+            };
+
+            vars.push(var);
+        }
         Self {
             id,
             tk,
             name,
             enabled: true,
-            vars: Vec::new(),
+            vars,
             formula: String::from("5.0 + 5.0"),
             value: TagValue::Real(0.0),
             status: TagStatus::Normal,

@@ -1,6 +1,6 @@
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
-use crate::{MAX_NUM_LINKS, Tag, TagValue};
+use crate::{Eval, MAX_NUM_LINKS, Tag, TagValue};
 use axum::extract::rejection::JsonRejection;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
@@ -28,6 +28,11 @@ pub struct TagReconfigData {
     pub tag_data: Tag,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct EvalReconfigData {
+    pub tag_info: TagIdQuery,
+    pub tag_data: Eval,
+}
 #[derive(Deserialize)]
 pub struct TagWriteData {
     pub tag_info: TagIdQuery,
@@ -156,6 +161,45 @@ pub async fn reconfig_device_link(
             }
         }
     }
+    Err(StatusCode::NOT_FOUND)
+}
+
+pub async fn reconfig_eval(
+    State(state): State<GlobalState>,
+    //Json(config): Json<TagReconfigData>,
+    payload: Result<Json<EvalReconfigData>, JsonRejection>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut locked_state = state.state_db.lock().await;
+
+    match payload {
+        Ok(config) => {
+            for link in locked_state.iter_mut() {
+                match link {
+                    Link::Eval(link) => {
+                        if link.id as u32 == config.tag_info.link_id {
+                            for tag in link.tags.iter_mut() {
+                                if tag.id as u32 == config.tag_info.tag_id {
+                                    info!("Found tag to reconfigure.");
+                                    *tag = config.tag_data.clone();
+                                    link.status = crate::LinkStatus::PendingTagReconfig;
+                                    return Ok(Json(tag.clone()));
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        // TODO check for other types of tags.
+                        continue;
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            info!("{}", e);
+            return Err(StatusCode::NOT_FOUND);
+        }
+    }
+    info!("Could not find tag to reconfigure.");
     Err(StatusCode::NOT_FOUND)
 }
 
