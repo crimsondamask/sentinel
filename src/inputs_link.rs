@@ -7,6 +7,8 @@ pub struct Input {
     pub id: usize,
     pub tk: String,
     pub name: String,
+    pub unit: String,
+    pub description: String,
     pub enabled: bool,
     //#[serde(skip_deserializing)]
     pub value: TagValue,
@@ -27,6 +29,8 @@ impl Input {
             id,
             tk,
             name,
+            unit: String::from("-"),
+            description: String::from("Input tag."),
             enabled: true,
             value: TagValue::Real(0.0),
         }

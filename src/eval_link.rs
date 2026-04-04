@@ -23,6 +23,8 @@ pub struct Eval {
     pub id: usize,
     pub tk: String,
     pub name: String,
+    pub unit: String,
+    pub description: String,
     pub enabled: bool,
     // List of variables included in the formula.
     // The eval function will use this list to expand
@@ -63,6 +65,8 @@ impl Eval {
             id,
             tk,
             name,
+            unit: String::from("-"),
+            description: String::from("Evaluation tag."),
             enabled: true,
             vars,
             formula: String::from("5.0 + 5.0"),
