@@ -49,6 +49,7 @@ pub async fn handle_link_task(task: Task) {
             500,
         );
 
+        info!("Starting the loop");
         // We make sure that we only lock the Mutex to update the default link
         // and release the lock.
         {
@@ -83,6 +84,8 @@ pub async fn handle_link_task(task: Task) {
                                 }
                                 LinkStatus::NeedsToReconnect => {
                                     default_link = link.clone();
+                                    info!("Needs to reconnect.");
+                                    break;
                                 }
                                 _ => {}
                             },
@@ -101,13 +104,13 @@ pub async fn handle_link_task(task: Task) {
 
                     match default_link.status {
                         LinkStatus::Normal => {
-                            info!(
-                                "Poll completed successfully: timestamp: {}",
-                                default_link
-                                    .last_poll_time
-                                    .and_utc()
-                                    .format("%Y-%m-%d %H:%M:%S%.3f")
-                            );
+                            //info!(
+                            //"Poll completed successfully: timestamp: {}",
+                            //default_link
+                            //.last_poll_time
+                            //.and_utc()
+                            //.format("%Y-%m-%d %H:%M:%S%.3f")
+                            //);
                         }
                         LinkStatus::Error(_) => {
                             /*
@@ -189,7 +192,7 @@ pub async fn handle_eval_task(task: Task) {
 
         let duration = now.elapsed();
 
-        info!("Evaluation Elapsed time: {}", duration.as_millis());
+        //info!("Evaluation Elapsed time: {}", duration.as_millis());
         {
             // Lock the mutex and update.
             let locked_link = &mut task.state.state_db.lock().await[task.id];

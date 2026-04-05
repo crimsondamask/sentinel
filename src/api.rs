@@ -1,6 +1,6 @@
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
-use crate::{Eval, MAX_NUM_LINKS, Tag, TagValue};
+use crate::{Eval, MAX_NUM_LINKS, ModbusTcpConfig, Protocol, Tag, TagValue};
 use axum::extract::rejection::JsonRejection;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
@@ -14,6 +14,12 @@ use tracing::instrument;
 #[derive(Serialize, Deserialize)]
 pub struct LinkIdQuery {
     pub link_id: u32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LinkProtocolReconfig {
+    pub link_id: u32,
+    pub protocol: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -161,6 +167,56 @@ pub async fn reconfig_device_link(
             }
         }
     }
+    Err(StatusCode::NOT_FOUND)
+}
+
+pub async fn reconfig_device_protocol(
+    State(state): State<GlobalState>,
+    Json(config): Json<LinkProtocolReconfig>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let fields: Vec<&str> = config.protocol.split(':').collect();
+
+    info!("Received ==============>.");
+
+    if fields.len() == 4 {
+        match fields[0] {
+            "modbus" => {
+                if fields[1] == "tcp" {
+                    let ip = fields[2].to_string();
+                    if let Ok(port) = fields[3].parse::<usize>() {
+                        let tcp_config = ModbusTcpConfig { ip, port };
+                        let mut locked_state = state.state_db.lock().await;
+                        for link in locked_state.iter_mut() {
+                            match link {
+                                Link::Device(link) => {
+                                    if link.id == config.link_id as usize {
+                                        link.protocol = Protocol::ModbusTcp(tcp_config);
+                                        link.status = crate::LinkStatus::NeedsToReconnect;
+                                        info!("Success ==============>.");
+                                        return Ok(StatusCode::OK);
+                                    }
+                                }
+                                _ => {
+                                    continue;
+                                }
+                            }
+                        }
+                    } else {
+                        info!("Could not parse port.");
+                        return Err(StatusCode::NOT_FOUND);
+                    }
+                } else {
+                    info!("Only TCP.");
+                    return Err(StatusCode::NOT_FOUND);
+                }
+            }
+            _ => {
+                info!("Only Modbus.");
+                return Err(StatusCode::NOT_FOUND);
+            }
+        }
+    }
+    info!("Wrong number of fields.");
     Err(StatusCode::NOT_FOUND)
 }
 

@@ -96,6 +96,10 @@ async fn main() -> Result<()> {
         .route("/api/reconfigure_device_link", post(reconfig_device_link))
         .route("/api/reconfigure_device_tag", post(reconfig_device_tag))
         .route("/api/reconfigure_eval", post(reconfig_eval))
+        .route(
+            "/api/reconfigure_device_protocol",
+            post(reconfig_device_protocol),
+        )
         .route("/api/write_tag", post(write_link_tag))
         .route("/api/reconfig_links", post(reconfig_links))
         .layer(TraceLayer::new_for_http())
