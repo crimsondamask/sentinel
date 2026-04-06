@@ -3,6 +3,7 @@ use anyhow::Result;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
+use tokio::time::Instant;
 use tokio_serial::SerialStream;
 
 use tokio_modbus::prelude::*;
@@ -156,6 +157,7 @@ pub struct DeviceLink {
     pub tag_count: usize,
     pub last_poll_time: NaiveDateTime,
     pub poll_wait_duration: u64,
+    pub scan_time: u128,
 }
 
 pub enum DeviceLinkContext {
@@ -416,6 +418,7 @@ impl DeviceLink {
             tag_count,
             last_poll_time: NaiveDateTime::default(),
             poll_wait_duration,
+            scan_time: 0,
         }
     }
 
@@ -449,8 +452,7 @@ impl DeviceLink {
     }
 
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) {
-        // Reset the link status.
-
+        let now = Instant::now();
         for tag in self.tags.iter_mut() {
             if tag.enabled {
                 if let Some(write_value) = tag.pending_write.clone() {
@@ -480,6 +482,7 @@ impl DeviceLink {
                 }
             }
         }
+        self.scan_time = now.elapsed().as_millis();
         self.last_poll_time = chrono::Local::now().naive_local();
     }
 
