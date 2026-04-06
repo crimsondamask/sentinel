@@ -1,12 +1,13 @@
 use crate::state::GlobalState;
 use crate::{DeviceLink, link::Link};
-use crate::{Eval, MAX_NUM_LINKS, ModbusTcpConfig, Protocol, Tag, TagValue};
+use crate::{Eval, MAX_NUM_LINKS, ModbusSerialConfig, ModbusTcpConfig, Protocol, Tag, TagValue};
 use axum::extract::rejection::JsonRejection;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::BufWriter;
+use std::time::Duration;
 use std::usize::MAX;
 use tracing::instrument;
 
@@ -170,21 +171,22 @@ pub async fn reconfig_device_link(
     Err(StatusCode::NOT_FOUND)
 }
 
+// Using a protocol details string to reconfigure the device.
 pub async fn reconfig_device_protocol(
     State(state): State<GlobalState>,
     Json(config): Json<LinkProtocolReconfig>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let fields: Vec<&str> = config.protocol.split(':').collect();
 
-    info!("Received ==============>.");
-
-    if fields.len() == 4 {
+    if fields.len() == 5 {
         match fields[0] {
             "modbus" => {
                 if fields[1] == "tcp" {
                     let ip = fields[2].to_string();
-                    if let Ok(port) = fields[3].parse::<usize>() {
-                        let tcp_config = ModbusTcpConfig { ip, port };
+                    if let (Ok(port), Ok(slave)) =
+                        (fields[3].parse::<usize>(), fields[4].parse::<u8>())
+                    {
+                        let tcp_config = ModbusTcpConfig { ip, port, slave };
                         let mut locked_state = state.state_db.lock().await;
                         for link in locked_state.iter_mut() {
                             match link {
@@ -192,7 +194,6 @@ pub async fn reconfig_device_protocol(
                                     if link.id == config.link_id as usize {
                                         link.protocol = Protocol::ModbusTcp(tcp_config);
                                         link.status = crate::LinkStatus::NeedsToReconnect;
-                                        info!("Success ==============>.");
                                         return Ok(StatusCode::OK);
                                     }
                                 }
@@ -202,11 +203,55 @@ pub async fn reconfig_device_protocol(
                             }
                         }
                     } else {
-                        info!("Could not parse port.");
+                        info!("Could not parse port or slave.");
                         return Err(StatusCode::NOT_FOUND);
                     }
                 } else {
-                    info!("Only TCP.");
+                    info!("Only TCP or RTU.");
+                    return Err(StatusCode::NOT_FOUND);
+                }
+            }
+            _ => {
+                info!("Only Modbus.");
+                return Err(StatusCode::NOT_FOUND);
+            }
+        }
+    } else if fields.len() == 5 {
+        match fields[0] {
+            "modbus" => {
+                if fields[1] == "rtu" {
+                    let com = fields[2].to_string();
+                    if let (Ok(baudrate), Ok(slave)) =
+                        (fields[3].parse::<u32>(), fields[4].parse::<u8>())
+                    {
+                        let serial_config = ModbusSerialConfig {
+                            com_port: com,
+                            baudrate,
+                            slave,
+                            parity: crate::ParityType::None,
+                            timeout: Duration::from_millis(2000),
+                        };
+                        let mut locked_state = state.state_db.lock().await;
+                        for link in locked_state.iter_mut() {
+                            match link {
+                                Link::Device(link) => {
+                                    if link.id == config.link_id as usize {
+                                        link.protocol = Protocol::ModbusSerial(serial_config);
+                                        link.status = crate::LinkStatus::NeedsToReconnect;
+                                        return Ok(StatusCode::OK);
+                                    }
+                                }
+                                _ => {
+                                    continue;
+                                }
+                            }
+                        }
+                    } else {
+                        info!("Could not parse baudrate or slave.");
+                        return Err(StatusCode::NOT_FOUND);
+                    }
+                } else {
+                    info!("Only TCP and RTU.");
                     return Err(StatusCode::NOT_FOUND);
                 }
             }

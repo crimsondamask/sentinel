@@ -38,16 +38,17 @@ impl Task {
 }
 
 pub async fn handle_link_task(task: Task) {
+    let mut default_link: DeviceLink = DeviceLink::new(
+        "new_link".to_string(),
+        "PLC".to_string(),
+        0,
+        Protocol::ModbusTcp(ModbusTcpConfig::new("127.0.0.1".to_string(), 5502)),
+        1000,
+        500,
+    );
+
     loop {
         // Temporary placeholder for the device link.
-        let mut default_link: DeviceLink = DeviceLink::new(
-            "new_link".to_string(),
-            "PLC".to_string(),
-            0,
-            Protocol::ModbusTcp(ModbusTcpConfig::new("127.0.0.1".to_string(), 5502)),
-            1000,
-            500,
-        );
 
         info!("Starting the loop");
         // We make sure that we only lock the Mutex to update the default link

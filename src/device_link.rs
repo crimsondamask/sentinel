@@ -18,11 +18,12 @@ pub enum ParityType {
 pub struct ModbusTcpConfig {
     pub ip: String,
     pub port: usize,
+    pub slave: u8,
 }
 
 impl ModbusTcpConfig {
     pub fn new(ip: String, port: usize) -> Self {
-        Self { ip, port }
+        Self { ip, port, slave: 1 }
     }
 }
 
@@ -426,7 +427,7 @@ impl DeviceLink {
             Protocol::ModbusTcp(config) => {
                 let socket_address: SocketAddr =
                     format!("{}:{}", config.ip, config.port).parse()?;
-                let ctx = tcp::connect(socket_address).await?;
+                let ctx = tcp::connect_slave(socket_address, Slave(config.slave)).await?;
                 self.status = LinkStatus::Normal;
                 Ok(DeviceLinkContext::ModbusContext(ctx))
             }
@@ -452,6 +453,7 @@ impl DeviceLink {
 
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) {
         // Reset the link status.
+
         self.status = LinkStatus::Normal;
         for tag in self.tags.iter_mut() {
             if tag.enabled {
