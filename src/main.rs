@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::routing::post;
-use axum::{Json, Router, routing::get};
+use axum::{Router, routing::get};
 use sentinel::state::GlobalState;
 use sentinel::{DeviceLink, EvalLink, InputsLink, Link, ModbusTcpConfig, Protocol, Task, api::*};
 use tokio::fs;

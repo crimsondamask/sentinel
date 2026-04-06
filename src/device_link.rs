@@ -1,10 +1,9 @@
 use crate::LinkStatus;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
-use tokio_serial::{Parity, SerialStream};
-use tracing::info;
+use tokio_serial::SerialStream;
 
 use tokio_modbus::prelude::*;
 
@@ -69,7 +68,6 @@ pub struct EipConfig {}
 pub struct OpcUaConfig {}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-//#[serde(tag = "type")]
 pub enum Protocol {
     ModbusTcp(ModbusTcpConfig),
     ModbusSerial(ModbusSerialConfig),
@@ -233,10 +231,10 @@ impl Tag {
                             anyhow::bail!("Value type is incompatible with register type.");
                         }
                     },
-                    ModbusRegister::Coil(reg) => {
+                    ModbusRegister::Coil(_reg) => {
                         todo!()
                     }
-                    ModbusRegister::Status(reg) => {
+                    ModbusRegister::Status(_reg) => {
                         todo!()
                     }
                 },
@@ -249,7 +247,6 @@ impl Tag {
         Ok(())
     }
 
-    // TODO
     pub async fn write(&mut self, ctx: &mut DeviceLinkContext, value: TagValue) -> Result<()> {
         self.status = TagStatus::Normal;
         match ctx {
@@ -355,10 +352,10 @@ impl Tag {
                             }
                         }
                     }
-                    ModbusRegister::Coil(reg) => {
+                    ModbusRegister::Coil(_reg) => {
                         todo!()
                     }
-                    ModbusRegister::Status(reg) => {
+                    ModbusRegister::Status(_reg) => {
                         todo!()
                     }
                 },
@@ -439,13 +436,13 @@ impl DeviceLink {
                 self.status = LinkStatus::Normal;
                 Ok(DeviceLinkContext::ModbusContext(ctx))
             }
-            Protocol::S7(config) => {
+            Protocol::S7(_config) => {
                 todo!()
             }
-            Protocol::Eip(config) => {
+            Protocol::Eip(_config) => {
                 todo!()
             }
-            Protocol::OpcUa(config) => {
+            Protocol::OpcUa(_config) => {
                 todo!()
             }
         }

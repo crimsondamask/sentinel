@@ -1,6 +1,5 @@
 use crate::{Input, Link, LinkStatus, Tag, TagStatus, TagValue};
-use anyhow::Result;
-use rhai::{AST, Engine, EvalAltResult, Scope};
+use rhai::{Engine, Scope};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

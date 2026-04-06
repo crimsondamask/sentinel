@@ -1,6 +1,6 @@
 use log::info;
 use std::time::Duration;
-use tokio::time::{self, Interval};
+use tokio::time::{self};
 
 use crate::{DeviceLink, EvalLink, Link, LinkStatus, ModbusTcpConfig, Protocol, device_link::Tag};
 use anyhow::Result;
@@ -97,11 +97,13 @@ pub async fn handle_link_task(task: Task) {
                                     continue;
                                 }
                                 LinkStatus::NeedsToReconnect => {
+                                    link.status = LinkStatus::Normal;
                                     default_link = link.clone();
                                     info!("Needs to reconnect.");
                                     break;
                                 }
                                 LinkStatus::Error(_) => {
+                                    link.status = LinkStatus::Normal;
                                     default_link = link.clone();
                                     info!("Error! Needs to reconnect.");
                                     break;
@@ -137,15 +139,8 @@ pub async fn handle_logging_task(_task: Task) {
 pub async fn handle_inputs_task(_task: Task) {
     loop {}
 }
-pub async fn handle_hash_task(task: Task) {
-    loop {
-        {
-            // TODO
-            let mut locked_hash = task.state.current_config_hash.lock().await;
-            let mut locked_state = task.state.state_db.lock().await;
-        }
-        tokio::time::sleep(Duration::from_millis(1000)).await;
-    }
+pub async fn handle_hash_task(_task: Task) {
+    loop {}
 }
 pub async fn handle_eval_task(task: Task) {
     // Store all the eval ASTs here and only update them if triggered by PendingTagReconfig.
@@ -176,7 +171,7 @@ pub async fn handle_eval_task(task: Task) {
             eval.evaluate(&links_list);
         }
 
-        let duration = now.elapsed();
+        let _duration = now.elapsed();
 
         //info!("Evaluation Elapsed time: {}", duration.as_millis());
         {

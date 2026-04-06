@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::BufWriter;
 use std::time::Duration;
-use std::usize::MAX;
-use tracing::instrument;
 
 // Used as a link ID for the lookup.
 #[derive(Serialize, Deserialize)]
@@ -206,20 +204,7 @@ pub async fn reconfig_device_protocol(
                         info!("Could not parse port or slave.");
                         return Err(StatusCode::NOT_FOUND);
                     }
-                } else {
-                    info!("Only TCP or RTU.");
-                    return Err(StatusCode::NOT_FOUND);
-                }
-            }
-            _ => {
-                info!("Only Modbus.");
-                return Err(StatusCode::NOT_FOUND);
-            }
-        }
-    } else if fields.len() == 5 {
-        match fields[0] {
-            "modbus" => {
-                if fields[1] == "rtu" {
+                } else if fields[1] == "rtu" {
                     let com = fields[2].to_string();
                     if let (Ok(baudrate), Ok(slave)) =
                         (fields[3].parse::<u32>(), fields[4].parse::<u8>())
@@ -251,7 +236,7 @@ pub async fn reconfig_device_protocol(
                         return Err(StatusCode::NOT_FOUND);
                     }
                 } else {
-                    info!("Only TCP and RTU.");
+                    info!("Only TCP or RTU.");
                     return Err(StatusCode::NOT_FOUND);
                 }
             }
