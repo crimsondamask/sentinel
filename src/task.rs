@@ -48,8 +48,6 @@ pub async fn handle_link_task(task: Task) {
     );
 
     loop {
-        // Temporary placeholder for the device link.
-
         info!("Starting the loop");
         // We make sure that we only lock the Mutex to update the default link
         // and release the lock.
@@ -69,6 +67,7 @@ pub async fn handle_link_task(task: Task) {
                     task.id, default_link.name
                 );
 
+                default_link.status = LinkStatus::Normal;
                 /*
                 Handle the connected link context
                 inside a loop.
@@ -76,67 +75,44 @@ pub async fn handle_link_task(task: Task) {
                 */
                 let mut interval = time::interval(Duration::from_millis(500));
                 interval.tick().await;
-                loop {
-                    {
-                        match &mut task.state.state_db.lock().await[task.id] {
-                            Link::Device(link) => match link.status {
-                                LinkStatus::PendingTagReconfig => {
-                                    default_link = link.clone();
-                                    link.status = LinkStatus::Normal;
-                                }
-                                LinkStatus::NeedsToReconnect => {
-                                    default_link = link.clone();
-                                    info!("Needs to reconnect.");
-                                    link.status = LinkStatus::Normal;
-                                    break;
-                                }
-                                _ => {}
-                            },
-                            _ => {}
-                        }
-                    }
 
+                // The polling loop:
+
+                loop {
                     // Poll the device.
                     default_link.poll(&mut link_context).await;
 
                     // Lock the state and update the link with the polled values.
                     {
-                        task.state.state_db.lock().await[task.id] =
-                            Link::Device(default_link.clone());
-                    }
-
-                    match default_link.status {
-                        LinkStatus::Normal => {
-                            //info!(
-                            //"Poll completed successfully: timestamp: {}",
-                            //default_link
-                            //.last_poll_time
-                            //.and_utc()
-                            //.format("%Y-%m-%d %H:%M:%S%.3f")
-                            //);
+                        let locked_state = &mut task.state.state_db.lock().await[task.id];
+                        match locked_state {
+                            Link::Device(link) => match link.status {
+                                LinkStatus::Normal => {
+                                    *link = default_link.clone();
+                                }
+                                LinkStatus::PendingTagReconfig => {
+                                    link.status = LinkStatus::Normal;
+                                    default_link = link.clone();
+                                    // If receiving a tag update, we don't wait.
+                                    continue;
+                                }
+                                LinkStatus::NeedsToReconnect => {
+                                    default_link = link.clone();
+                                    info!("Needs to reconnect.");
+                                    break;
+                                }
+                                LinkStatus::Error(_) => {
+                                    default_link = link.clone();
+                                    info!("Error! Needs to reconnect.");
+                                    break;
+                                }
+                            },
+                            _ => {}
                         }
-                        LinkStatus::Error(_) => {
-                            /*
-                            In case of an error, we try to reconnect by breaking out of
-                            the loop.
-                            */
-                            info!("Link is trying to reconnect.");
-                            break;
-                        }
-                        LinkStatus::NeedsToReconnect => {
-                            /*
-                            We might trigger a reconnect event from elsewhere.
-                            This is a workaround. Might change.
-                            */
-                            break;
-                        }
-                        _ => {}
                     }
 
                     // Wait
                     interval.tick().await;
-                    //tokio::time::sleep(Duration::from_millis(default_link.poll_wait_duration))
-                    //.await;
                 }
             }
             Err(e) => {

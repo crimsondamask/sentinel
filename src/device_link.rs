@@ -413,7 +413,7 @@ impl DeviceLink {
             name,
             enabled: false,
             protocol,
-            status: LinkStatus::Error("Disconnected".to_string()),
+            status: LinkStatus::Normal,
             pending_reconnect: false,
             tags: tag_list,
             tag_count,
@@ -454,7 +454,6 @@ impl DeviceLink {
     pub async fn poll(&mut self, ctx: &mut DeviceLinkContext) {
         // Reset the link status.
 
-        self.status = LinkStatus::Normal;
         for tag in self.tags.iter_mut() {
             if tag.enabled {
                 if let Some(write_value) = tag.pending_write.clone() {
@@ -482,8 +481,6 @@ impl DeviceLink {
                         ));
                     }
                 }
-            } else {
-                tag.status = TagStatus::Error(format!("The Tag is not enabled."));
             }
         }
         self.last_poll_time = chrono::Local::now().naive_local();
