@@ -151,6 +151,8 @@ pub struct DeviceLink {
     pub enabled: bool,
     pub protocol: Protocol,
     pub status: LinkStatus,
+    #[serde(skip)]
+    pub pending_reconnect: bool,
     pub tags: Vec<Tag>,
     pub tag_count: usize,
     pub last_poll_time: NaiveDateTime,
@@ -411,6 +413,7 @@ impl DeviceLink {
             enabled: false,
             protocol,
             status: LinkStatus::Error("Disconnected".to_string()),
+            pending_reconnect: false,
             tags: tag_list,
             tag_count,
             last_poll_time: NaiveDateTime::default(),

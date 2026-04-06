@@ -67,6 +67,7 @@ pub async fn handle_link_task(task: Task) {
                     "Connection successful from task: {}. Device: {}",
                     task.id, default_link.name
                 );
+
                 /*
                 Handle the connected link context
                 inside a loop.
@@ -85,6 +86,7 @@ pub async fn handle_link_task(task: Task) {
                                 LinkStatus::NeedsToReconnect => {
                                     default_link = link.clone();
                                     info!("Needs to reconnect.");
+                                    link.status = LinkStatus::Normal;
                                     break;
                                 }
                                 _ => {}
@@ -138,6 +140,13 @@ pub async fn handle_link_task(task: Task) {
             }
             Err(e) => {
                 info!("Failed to connect: {e}. Task: {}", task.id);
+                let mut locked_state = task.state.state_db.lock().await;
+                match &mut locked_state[task.id] {
+                    Link::Device(link) => {
+                        link.status = LinkStatus::Error(e.to_string());
+                    }
+                    _ => {}
+                }
             }
         }
         tokio::time::sleep(Duration::from_millis(2000)).await;
