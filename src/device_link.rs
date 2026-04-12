@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, time::Duration};
 use tokio::time::Instant;
 use tokio_serial::SerialStream;
+use tracing::info;
 
 use tokio_modbus::prelude::*;
 
@@ -284,7 +285,9 @@ impl Tag {
                             TagValue::Real(_) => match value {
                                 TagValue::Real(v) => {
                                     let bytes_array = v.to_le_bytes();
-                                    let bytes = bytes_array.split_at(1);
+                                    //
+                                    //
+                                    let bytes = bytes_array.split_at(2);
                                     let h_bytes = bytes.0.try_into()?;
                                     let l_bytes = bytes.1.try_into()?;
                                     let u16_high = u16::from_le_bytes(h_bytes);
@@ -460,8 +463,11 @@ impl DeviceLink {
                         Ok(_) => {
                             // Reset the write flag.
                             tag.pending_write = None;
+                            info!("Write successfull.");
                         }
                         Err(e) => {
+                            info!("Could not write tag. {e}");
+                            tag.pending_write = None;
                             tag.status = TagStatus::Error(format!("Error writing tag: {}", e));
                             self.status = LinkStatus::Error(format!(
                                 "Writing failed at Tag: {}. Error: {}",

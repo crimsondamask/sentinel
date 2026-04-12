@@ -342,10 +342,12 @@ pub async fn write_link_tag(
         match link {
             Link::Device(link) => {
                 if link.id as u32 == data.tag_info.link_id {
-                    for tag in link.tags.iter_mut() {
+                    for (i, tag) in &mut link.tags.iter().enumerate() {
                         if tag.id as u32 == data.tag_info.tag_id {
-                            info!("Found tag to write. Value: {:?}", &data.tag_value);
-                            tag.pending_write = Some(data.tag_value);
+                            //tag.pending_write = Some(data.tag_value);
+                            info!("Found tag to write. {:?}", tag.pending_write.clone());
+                            link.tags[i].pending_write = Some(data.tag_value);
+                            link.status = crate::LinkStatus::PendingTagReconfig;
 
                             return Ok(StatusCode::OK);
                         }
