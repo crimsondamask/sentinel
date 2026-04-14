@@ -3,6 +3,7 @@ pub mod device_link;
 pub mod eval_link;
 pub mod inputs_link;
 pub mod link;
+pub mod logger_link;
 pub mod state;
 pub mod task;
 
@@ -11,5 +12,6 @@ pub use device_link::*;
 pub use eval_link::*;
 pub use inputs_link::*;
 pub use link::*;
+pub use logger_link::*;
 pub use state::*;
 pub use task::*;
