@@ -269,8 +269,8 @@ impl Tag {
                                 TagValue::Dint(v) => {
                                     let bytes_array = v.to_le_bytes();
                                     let bytes = bytes_array.split_at(2);
-                                    let h_bytes = bytes.0.try_into()?;
-                                    let l_bytes = bytes.1.try_into()?;
+                                    let h_bytes = bytes.1.try_into()?;
+                                    let l_bytes = bytes.0.try_into()?;
                                     let u16_high = u16::from_le_bytes(h_bytes);
                                     let u16_low = u16::from_le_bytes(l_bytes);
                                     let data_to_write = [u16_high, u16_low];
@@ -288,8 +288,8 @@ impl Tag {
                                     //
                                     //
                                     let bytes = bytes_array.split_at(2);
-                                    let h_bytes = bytes.0.try_into()?;
-                                    let l_bytes = bytes.1.try_into()?;
+                                    let h_bytes = bytes.1.try_into()?;
+                                    let l_bytes = bytes.0.try_into()?;
                                     let u16_high = u16::from_le_bytes(h_bytes);
                                     let u16_low = u16::from_le_bytes(l_bytes);
                                     let data_to_write = [u16_high, u16_low];
