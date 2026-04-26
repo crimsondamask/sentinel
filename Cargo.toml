@@ -12,6 +12,7 @@ features = "0.10.0"
 influxdb3 = "0.2.0"
 jsonwebtoken = { version = "10.2.0", features = ["aws_lc_rs"] }
 log = "0.4.29"
+reqwest = "0.13.2"
 rhai = { version = "1.24.0", features = ["f32_float", "only_i64", "no_closure", "no_position"] }
 rust7 = "0.1.2"
 serde = { version = "1.0.228", features = ["derive"] }

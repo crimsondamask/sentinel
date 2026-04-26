@@ -44,7 +44,7 @@ pub async fn handle_link_task(task: Task) {
         0,
         Protocol::ModbusTcp(ModbusTcpConfig::new("127.0.0.1".to_string(), 5502)),
         1000,
-        500,
+        1000,
     );
 
     loop {
@@ -73,7 +73,7 @@ pub async fn handle_link_task(task: Task) {
                 inside a loop.
                 This traps the execution in an infinite loop until an error occurs.
                 */
-                let mut interval = time::interval(Duration::from_millis(500));
+                let mut interval = time::interval(Duration::from_millis(1000));
                 interval.tick().await;
 
                 // The polling loop:

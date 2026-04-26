@@ -1,4 +1,61 @@
+use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::Link;
+use crate::LinkStatus;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LoggerLink {}
+pub struct InfluxDbInfo {
+    pub url: String,
+    pub token: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum DataBase {
+    InfluxDb(InfluxDbInfo),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LogTagInfo {
+    pub link_id: usize,
+    pub tag_id: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LoggerLink {
+    pub name: String,
+    pub id: usize,
+    pub database: DataBase,
+    pub status: LinkStatus,
+    pub tags: Vec<LogTagInfo>,
+    pub log_delay_millis: usize,
+}
+
+impl LoggerLink {
+    pub fn new(name: String, id: usize, num_tags: usize) -> Self {
+        let mut tags: Vec<LogTagInfo> = Vec::new();
+        for i in 0..num_tags {
+            let log_tag = LogTagInfo {
+                link_id: 0,
+                tag_id: i,
+            };
+
+            tags.push(log_tag);
+        }
+        let influx_info = InfluxDbInfo {
+            url: String::new(),
+            token: String::new(),
+        };
+
+        Self {
+            name,
+            id,
+            database: DataBase::InfluxDb(influx_info),
+            status: LinkStatus::Normal,
+            tags,
+            log_delay_millis: 1000,
+        }
+    }
+    pub fn log(&self, links: &Vec<Link>) {}
+}

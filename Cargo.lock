@@ -1582,6 +1582,7 @@ dependencies = [
  "influxdb3",
  "jsonwebtoken",
  "log",
+ "reqwest",
  "rhai",
  "rust7",
  "serde",
