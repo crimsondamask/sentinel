@@ -57,5 +57,18 @@ impl LoggerLink {
             log_delay_millis: 1000,
         }
     }
-    pub fn log(&self, links: &Vec<Link>) {}
+    pub fn log(&self, links: &Vec<Link>) {
+        for tag in &self.tags {
+            for link in links {
+                match link {
+                    Link::Device(link) => {
+                        if tag.link_id == link.id {
+                            for link_tag in &link.tags {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
 }

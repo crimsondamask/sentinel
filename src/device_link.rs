@@ -431,6 +431,7 @@ impl DeviceLink {
                 let socket_address: SocketAddr =
                     format!("{}:{}", config.ip, config.port).parse()?;
                 let ctx = tcp::connect_slave(socket_address, Slave(config.slave)).await?;
+
                 self.status = LinkStatus::Normal;
                 Ok(DeviceLinkContext::ModbusContext(ctx))
             }
