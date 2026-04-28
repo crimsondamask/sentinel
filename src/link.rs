@@ -1,8 +1,15 @@
-use crate::{InputsLink, LoggerLink, device_link::*, eval_link::*};
+use crate::{Input, InputsLink, LoggerLink, device_link::*, eval_link::*};
 use serde::{Deserialize, Serialize};
 
 pub const MAX_NUM_LINKS: usize = 5;
 
+// Helper type to use for the logger tag list.
+#[derive(Clone, Debug, Serialize, PartialEq, Deserialize)]
+pub enum AbstractTag {
+    DeviceTag(Tag),
+    InputTag(Input),
+    EvalTag(Eval),
+}
 #[derive(Clone, Debug, Serialize, PartialEq, Deserialize)]
 pub enum Link {
     Device(DeviceLink),

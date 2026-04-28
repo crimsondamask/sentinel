@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::AbstractTag;
 use crate::Link;
 use crate::LinkStatus;
 
@@ -58,17 +59,42 @@ impl LoggerLink {
         }
     }
     pub fn log(&self, links: &Vec<Link>) {
+        let mut tags_to_log: Vec<AbstractTag> = Vec::new();
+        // Logged tags lookup.
         for tag in &self.tags {
             for link in links {
                 match link {
                     Link::Device(link) => {
                         if tag.link_id == link.id {
-                            for link_tag in &link.tags {}
+                            for link_tag in &link.tags {
+                                if link_tag.id == tag.tag_id {
+                                    tags_to_log.push(AbstractTag::DeviceTag(link_tag.clone()));
+                                }
+                            }
+                        }
+                    }
+                    Link::Eval(link) => {
+                        if tag.link_id == link.id {
+                            for link_tag in &link.tags {
+                                if link_tag.id == tag.tag_id {
+                                    tags_to_log.push(AbstractTag::EvalTag(link_tag.clone()));
+                                }
+                            }
+                        }
+                    }
+                    Link::Inputs(link) => {
+                        if tag.link_id == link.id {
+                            for link_tag in &link.tags {
+                                if link_tag.id == tag.tag_id {
+                                    tags_to_log.push(AbstractTag::InputTag(link_tag.clone()));
+                                }
+                            }
                         }
                     }
                     _ => {}
                 }
             }
         }
+        
     }
 }
